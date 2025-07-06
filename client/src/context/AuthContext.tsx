@@ -2,7 +2,6 @@
 
 import {
   createContext,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
@@ -10,8 +9,12 @@ import {
 } from "react";
 import api from "@/lib/api";
 import { AuthContextType, User } from "@/types/user";
+import Loader from "@/components/Loader";
+import { usePathname } from "next/navigation";
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -21,6 +24,10 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  const pathname = usePathname();
+
+  const isPublicRoute = ["/login", "/"].includes(pathname); // Add more if needed
 
   const fetchCurrentUser = async (): Promise<void> => {
     try {
@@ -66,7 +73,14 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    void fetchCurrentUser();
+    // Fetch current user only if not on public routes
+    if (!isPublicRoute) {
+      fetchCurrentUser();
+    } else {
+      setLoading(false);
+      setIsAuthenticated(false);
+      setUser(null);
+    }
   }, []);
 
   const value: AuthContextType = {
@@ -77,5 +91,9 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     logout,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return loading ? (
+    <Loader />
+  ) : (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 };

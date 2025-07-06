@@ -14,6 +14,16 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
+// ROUTES
+import userRouter from "./routes/user.routes";
+import errorMiddleware from "./middlewares/error.middleware";
+
+// routes declaration
+app.use("/api/v1/users", userRouter);
+
+// Error handling middleware
+app.use(errorMiddleware);
+
 const PORT: number = parseInt(process.env.PORT || "8000", 10);
 
 app.listen(PORT, () => {

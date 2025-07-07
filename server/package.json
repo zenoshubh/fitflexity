@@ -22,6 +22,8 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.62",
+    "@langchain/google-genai": "^0.2.14",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -30,6 +32,7 @@
     "drizzle-orm": "^0.44.2",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "langchain": "^0.3.29",
     "pg": "^8.16.3"
   }
 }

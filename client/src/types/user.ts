@@ -3,7 +3,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  provider: string;
+  dateOfBirth?: string;
+  isProfileComplete: boolean;
   createdAt: string;
   updatedAt: string;
 }

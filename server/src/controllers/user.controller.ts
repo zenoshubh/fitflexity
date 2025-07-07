@@ -51,6 +51,25 @@ interface GoogleUserInfo {
     verified_email?: boolean;
 }
 
+const initiateGoogleAuth = asyncHandler(async (req, res) => {
+    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+    const REDIRECT_URI = 'http://localhost:8000/api/v1/users/auth/google/callback';
+
+    if (!CLIENT_ID) {
+        throw new ApiError(500, "Google OAuth configuration missing");
+    }
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+        `client_id=${CLIENT_ID}&` +
+        `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+        `response_type=code&` +
+        `scope=openid%20email%20profile&` +
+        `access_type=offline&` +
+        `prompt=consent`;
+
+    res.redirect(authUrl);
+});
+
 const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
     const CLIENT_ID: string | undefined = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET: string | undefined = process.env.GOOGLE_CLIENT_SECRET;
@@ -100,7 +119,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
             .where(eq(users.email, user.email))
             .limit(1);
 
-        let userData: typeof users.$inferSelect;
+        let userData;
 
         if (existingUser.length > 0) {
             console.log("Existing user found");
@@ -112,6 +131,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                 firstName: user.given_name || user.name?.split(' ')[0] || 'Unknown',
                 lastName: user.family_name || user.name?.split(' ')[1] || 'User',
                 email: user.email.toLowerCase(),
+                isProfileComplete: false, // Default to false, can be updated later
                 googleId: user.id,
             };
 
@@ -123,8 +143,8 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                     firstName: users.firstName,
                     lastName: users.lastName,
                     email: users.email,
-                    provider: users.provider,
                     dateOfBirth: users.dateOfBirth,
+                    isProfileComplete: users.isProfileComplete,
                     googleId: users.googleId,
                     refreshToken: users.refreshToken,
                     createdAt: users.createdAt,
@@ -169,8 +189,11 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
 
         // 3️⃣ Redirect to frontend
-        res.redirect(`${process.env.CLIENT_URL}/dashboard`);
-
+        if (userData.isProfileComplete) {
+            res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+        } else {
+            res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
+        }
     } catch (err: any) {
         console.error("Google signup error details:", {
             message: err.message,
@@ -190,23 +213,52 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
     }
 });
 
-const initiateGoogleAuth = asyncHandler(async (req, res) => {
-    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const REDIRECT_URI = 'http://localhost:8000/api/v1/users/auth/google/callback';
+const completeProfile = asyncHandler(async (req, res) => {
+    const { dateOfBirth, weightInKgs, heightInCms, bodyType, activityLevel } = req.body;
 
-    if (!CLIENT_ID) {
-        throw new ApiError(500, "Google OAuth configuration missing");
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized request");
     }
 
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-        `client_id=${CLIENT_ID}&` +
-        `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
-        `response_type=code&` +
-        `scope=openid%20email%20profile&` +
-        `access_type=offline&` +
-        `prompt=consent`;
+    if (!dateOfBirth || !weightInKgs || !heightInCms || !bodyType || !activityLevel) {
+        throw new ApiError(400, "All fields are required to complete the profile");
+    }
 
-    res.redirect(authUrl);
+    // Update user profile
+    const updatedUser = await db
+        .update(users)
+        .set({
+            dateOfBirth,
+            weightInKgs,
+            heightInCms,
+            bodyType,
+            activityLevel,
+            isProfileComplete: true
+        })
+        .where(eq(users.id, req.user.id))
+        .returning({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email,
+            dateOfBirth: users.dateOfBirth,
+            isProfileComplete: users.isProfileComplete,
+            createdAt: users.createdAt,
+            updatedAt: users.updatedAt
+        });
+
+    if (!updatedUser[0]) {
+        throw new ApiError(500, "Failed to update user profile");
+    }
+
+    res.status(200).json(new ApiResponse(200, updatedUser[0], "Profile completed successfully"));
+})
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized request");
+    }
+    res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -230,13 +282,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     res.clearCookie('refreshToken', cookieOptions);
 
     res.status(200).json(new ApiResponse(200, {}, "User logged out successfully"));
-});
-
-const getCurrentUser = asyncHandler(async (req, res) => {
-    if (!req.user) {
-        throw new ApiError(401, "Unauthorized request");
-    }
-    res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -288,7 +333,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         };
 
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: process.env.ACCESS_TOKEN_EXPIRY ? parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 1000 : 15 * 60 * 1000 }); // 15 minutes
-        res.cookie('refreshToken', newRefreshToken, {...cookieOptions , maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        res.cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
 
         res
             .status(200)
@@ -304,4 +349,4 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
-export { authenticateUserWithGoogle, initiateGoogleAuth, logoutUser, getCurrentUser, refreshAccessToken };
+export { initiateGoogleAuth, authenticateUserWithGoogle, completeProfile, getCurrentUser, logoutUser, refreshAccessToken };

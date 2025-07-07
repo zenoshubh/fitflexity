@@ -74,9 +74,8 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Fetch current user only if not on public routes
-    if (!isPublicRoute) {
-      fetchCurrentUser();
-    } else {
+    fetchCurrentUser();
+    if (isPublicRoute) {
       setLoading(false);
       setIsAuthenticated(false);
       setUser(null);

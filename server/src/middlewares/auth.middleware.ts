@@ -28,7 +28,7 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
                 lastName: users.lastName,
                 email: users.email,
                 dateOfBirth: users.dateOfBirth,
-                provider: users.provider,
+                isProfileComplete: users.isProfileComplete,
                 createdAt: users.createdAt,
                 updatedAt: users.updatedAt,
             })

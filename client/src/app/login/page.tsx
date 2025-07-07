@@ -1,11 +1,10 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import Link from "next/link";
 import React from "react";
 
-const Home = () => {
-  const { isAuthenticated } = useAuth();
+const Login = () => {
+  const { login, isAuthenticated } = useAuth();
 
   // If authenticated, show message (let user manually navigate or add redirect button)
   if (isAuthenticated) {
@@ -29,13 +28,18 @@ const Home = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold text-center mb-6">AI Fitness App</h1>
-        <p className="text-gray-600 text-center mb-6">Welcome</p>
-        <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200">
-          <Link href="/login">Proceed to Login Page</Link>
+        <p className="text-gray-600 text-center mb-6">
+          Welcome! Please sign in with your Google account to continue.
+        </p>
+        <button
+          onClick={login}
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-200"
+        >
+          Login with Google
         </button>
       </div>
     </div>
   );
 };
 
-export default Home;
+export default Login;

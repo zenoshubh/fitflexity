@@ -16,10 +16,12 @@ app.use(cookieParser());
 
 // ROUTES
 import userRouter from "./routes/user.routes";
+import dietRouter from "./routes/diet.routes";
 import errorMiddleware from "./middlewares/error.middleware";
 
 // routes declaration
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/diet", dietRouter)
 
 // Error handling middleware
 app.use(errorMiddleware);

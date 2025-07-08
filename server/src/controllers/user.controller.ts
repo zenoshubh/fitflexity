@@ -53,7 +53,7 @@ interface GoogleUserInfo {
 
 const initiateGoogleAuth = asyncHandler(async (req, res) => {
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const REDIRECT_URI = 'http://localhost:8000/api/v1/users/auth/google/callback';
+    const REDIRECT_URI = `${process.env.BASE_URL}/api/v1/users/auth/google/callback`;
 
     if (!CLIENT_ID) {
         throw new ApiError(500, "Google OAuth configuration missing");
@@ -67,7 +67,7 @@ const initiateGoogleAuth = asyncHandler(async (req, res) => {
         `access_type=offline&` +
         `prompt=consent`;
 
-    res.redirect(authUrl);
+    return res.redirect(authUrl);
 });
 
 const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
@@ -190,9 +190,9 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 
         // 3️⃣ Redirect to frontend
         if (userData.isProfileComplete) {
-            res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+            return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
         } else {
-            res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
+            return res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
         }
     } catch (err: any) {
         console.error("Google signup error details:", {
@@ -251,14 +251,14 @@ const completeProfile = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to update user profile");
     }
 
-    res.status(200).json(new ApiResponse(200, updatedUser[0], "Profile completed successfully"));
+    return res.status(200).json(new ApiResponse(200, updatedUser[0], "Profile completed successfully"));
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
-    res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, req.user, "User fetched successfully"));
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -281,7 +281,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     res.clearCookie('accessToken', cookieOptions);
     res.clearCookie('refreshToken', cookieOptions);
 
-    res.status(200).json(new ApiResponse(200, {}, "User logged out successfully"));
+    return res.status(200).json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -335,7 +335,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: process.env.ACCESS_TOKEN_EXPIRY ? parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 1000 : 15 * 60 * 1000 }); // 15 minutes
         res.cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
 
-        res
+        return res
             .status(200)
             .json(
                 new ApiResponse(

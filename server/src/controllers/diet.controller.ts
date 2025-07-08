@@ -97,7 +97,7 @@ You are a nutrition expert. Generate a detailed daily diet plan for fat loss for
         throw new ApiError(500, "Failed to generate or parse diet plan");
     }
 
-    res.json(
+   return res.status(200).json(
         new ApiResponse(200, { plan: planJson }, "Diet plan generated successfully")
     );
 });

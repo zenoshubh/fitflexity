@@ -20,12 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import withAuth from "@/components/withAuth";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
 import Loader from "@/components/Loader";
+import { toast } from "sonner";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAuth } from "@/hooks/useAuth";
+import withAuth from "@/components/withAuth";
 
 // Enums as per schema
 const dietTypeEnum = z.enum([
@@ -38,7 +47,7 @@ const dietTypeEnum = z.enum([
 ]);
 const dietGoalEnum = z.enum(["weight_loss", "muscle_gain", "maintenance"]);
 
-// Zod schema for the form
+// Zod schema for TableHeade form
 const formSchema = z.object({
   dietType: dietTypeEnum,
   goal: dietGoalEnum,
@@ -69,25 +78,27 @@ const CreateDietPlanPage = () => {
         userId: user?.id,
       });
 
-      console.log(response);
+      const { status, data, message } = response.data;
 
-      if (response?.status == 200) {
-        setDietPlan(response.data.data.plan);
+      if (status == 200) {
+        setDietPlan(data.plan);
+        toast.success(`${message}`);
         console.log(dietPlan);
       } else {
         setDietPlan(undefined);
-        console.error("Failed to create diet plan", response.data);
+        toast.error(`Failed to create diet plan: ${message}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       setDietPlan(undefined);
       console.error("Error creating diet plan:", error);
-      // Optionally, you can show an error message to the user
+      toast.error(`${error?.response?.data?.message}`);
+      // Optionally, you can show an error message to TableHeade user
     }
   }
 
   if (!user) return <Loader />;
 
-  // Helper to check if a row is the "Total" row
+  // Helper to check if a row is TableHeade "Total" row
   const isTotalRow = (row: any) =>
     row.mealNumber === undefined &&
     row.mealName === undefined &&
@@ -180,21 +191,21 @@ const CreateDietPlanPage = () => {
           <h2 className="text-xl font-bold mb-4 text-center">
             Generated Diet Plan
           </h2>
-          <table className="min-w-full border border-gray-300 bg-white">
-            <thead>
-              <tr className="bg-green-600 text-white">
-                <th className="border px-2 py-1">Meal Number</th>
-                <th className="border px-2 py-1">Meal Name</th>
-                <th className="border px-2 py-1">Menu</th>
-                <th className="border px-2 py-1">Qty</th>
-                <th className="border px-2 py-1">Protein</th>
-                <th className="border px-2 py-1">Carbs</th>
-                <th className="border px-2 py-1">Fats</th>
-                <th className="border px-2 py-1">Fibers</th>
-                <th className="border px-2 py-1">Calories</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-full border border-gray-300 bg-white">
+            <TableHeader>
+              <TableRow className="bg-green-600 text-white">
+                <TableHead className="border px-2 py-1">Meal Number</TableHead>
+                <TableHead className="border px-2 py-1">Meal Name</TableHead>
+                <TableHead className="border px-2 py-1">Menu</TableHead>
+                <TableHead className="border px-2 py-1">Qty</TableHead>
+                <TableHead className="border px-2 py-1">Protein</TableHead>
+                <TableHead className="border px-2 py-1">Carbs</TableHead>
+                <TableHead className="border px-2 py-1">Fats</TableHead>
+                <TableHead className="border px-2 py-1">Fibers</TableHead>
+                <TableHead className="border px-2 py-1">Calories</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {dietPlan.map((meal, mealIdx) => {
                 // Handle "Total" row if present
                 if (
@@ -203,38 +214,41 @@ const CreateDietPlanPage = () => {
                   meal.items === undefined &&
                   (meal.Total || meal.total)
                 ) {
-                  // Support both "Total" and "total" keys
+                  // Support boTableHead "Total" and "total" keys
                   const total = meal.Total || meal.total;
                   return (
-                    <tr key="total" className="bg-green-200 font-bold">
-                      <td className="border px-2 py-1 text-center" colSpan={2}>
+                    <TableRow key="total" className="bg-green-200 font-bold">
+                      <TableCell
+                        className="border px-2 py-1 text-center"
+                        colSpan={2}
+                      >
                         Total
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.weight || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.protein || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.carbs || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.fats || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.fibers || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center">
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center">
                         {total.calories || ""}
-                      </td>
-                      <td className="border px-2 py-1 text-center"></td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="border px-2 py-1 text-center"></TableCell>
+                    </TableRow>
                   );
                 }
 
                 // Render meal rows
-                // Define interfaces for the meal items and structure
+                // Define interfaces for TableHeade meal items and structure
                 interface MealItem {
                   name: string;
                   qty: string | number;
@@ -253,36 +267,50 @@ const CreateDietPlanPage = () => {
 
                 return (meal as Meal).items?.map(
                   (item: MealItem, idx: number) => (
-                    <tr key={`${meal.mealNumber}-${idx}`}>
+                    <TableRow key={`${meal.mealNumber}-${idx}`}>
                       {idx === 0 && (
                         <>
-                          <td
+                          <TableCell
                             className="border px-2 py-1 text-center"
                             rowSpan={(meal as Meal).items.length}
                           >
                             {meal.mealNumber}
-                          </td>
-                          <td
+                          </TableCell>
+                          <TableCell
                             className="border px-2 py-1 text-center"
                             rowSpan={(meal as Meal).items.length}
                           >
                             {meal.mealName}
-                          </td>
+                          </TableCell>
                         </>
                       )}
-                      <td className="border px-2 py-1">{item.name}</td>
-                      <td className="border px-2 py-1">{item.qty}</td>
-                      <td className="border px-2 py-1">{item.protein}</td>
-                      <td className="border px-2 py-1">{item.carbs}</td>
-                      <td className="border px-2 py-1">{item.fats}</td>
-                      <td className="border px-2 py-1">{item.fibers}</td>
-                      <td className="border px-2 py-1">{item.calories}</td>
-                    </tr>
+                      <TableCell className="border px-2 py-1">
+                        {item.name}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.qty}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.protein}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.carbs}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.fats}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.fibers}
+                      </TableCell>
+                      <TableCell className="border px-2 py-1">
+                        {item.calories}
+                      </TableCell>
+                    </TableRow>
                   )
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </>

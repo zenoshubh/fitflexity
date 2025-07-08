@@ -29,6 +29,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import Loader from "@/components/Loader";
+import { toast } from "sonner";
 
 // Zod enums for bodyType and activityLevel
 const bodyTypeEnum = z.enum(["ectomorph", "mesomorph", "endomorph"]);
@@ -70,18 +71,16 @@ const CompleteProfilePage = () => {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      await api.post("/users/complete-profile", values, {
+      const response = await api.post("/users/complete-profile", values, {
         withCredentials: true,
       });
-      // Optionally show a success message here
-      router.push("/dashboard");
-    } catch (error: any) {
-      // Optionally show an error message here
-      if (error.response?.data?.message) {
-        alert(error.response.data.message);
-      } else {
-        alert("Failed to complete profile. Please try again.");
+      const { status, data, message } = response.data;
+      if (status == 200) {
+        toast.success(message || "Profile completed successfully");
+        window.location.href = "/dashboard";
       }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "An error occurred");
     }
   }
 

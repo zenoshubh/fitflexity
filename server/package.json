@@ -24,6 +24,10 @@
   "dependencies": {
     "@langchain/core": "^0.3.62",
     "@langchain/google-genai": "^0.2.14",
+    "@langchain/langgraph": "^0.3.7",
+    "@langchain/mistralai": "^0.2.1",
+    "@langchain/pinecone": "^0.2.0",
+    "@langchain/textsplitters": "^0.1.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",

@@ -214,13 +214,13 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 });
 
 const completeProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, weightInKgs, heightInCms, bodyType, activityLevel } = req.body;
+    const { dateOfBirth, gender, weightInKgs, heightInCms, bodyFatPercentage, activityLevel } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!dateOfBirth || !weightInKgs || !heightInCms || !bodyType || !activityLevel) {
+    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel) {
         throw new ApiError(400, "All fields are required to complete the profile");
     }
 
@@ -229,9 +229,10 @@ const completeProfile = asyncHandler(async (req, res) => {
         .update(users)
         .set({
             dateOfBirth,
+            gender,
             weightInKgs,
             heightInCms,
-            bodyType,
+            bodyFatPercentage,
             activityLevel,
             isProfileComplete: true
         })

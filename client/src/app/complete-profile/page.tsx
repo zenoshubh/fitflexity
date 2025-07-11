@@ -30,15 +30,31 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import Loader from "@/components/Loader";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import Image from "next/image";
+import Male_10percent from "@/assets/Male_lessThan10percent.png";
+import Male_11To18percent from "@/assets/Male_11To18percent.png";
+import Male_19To25percent from "@/assets/Male_19To25percent.png";
+import Male_moreThan26percent from "@/assets/Male_moreThan26percent.png";
+import { Label } from "@/components/ui/label";
 
-// Zod enums for bodyType and activityLevel
-const bodyTypeEnum = z.enum(["ectomorph", "mesomorph", "endomorph"]);
+// Zod enums
+
+const genderEnum = z.enum(["male", "female", "other"]);
+
 const activityLevelEnum = z.enum([
   "sedentary",
   "lightly_active",
   "moderately_active",
   "very_active",
   "super_active",
+]);
+
+const bodyFatPercentageEnum = z.enum([
+  "less_than_10",
+  "between_11_and_18",
+  "between_19_and_25",
+  "more_than_26",
 ]);
 
 const formSchema = z.object({
@@ -49,9 +65,35 @@ const formSchema = z.object({
   heightInCms: z
     .number()
     .min(50, { message: "Height must be at least 50 cm." }),
-  bodyType: bodyTypeEnum,
+  bodyFatPercentage: bodyFatPercentageEnum,
   activityLevel: activityLevelEnum,
+  gender: genderEnum,
 });
+
+const bodyFatOptions = [
+  {
+    value: "less_than_10",
+    img: Male_10percent,
+    label: "<10%",
+  },
+  {
+    value: "between_11_and_18",
+    img: Male_11To18percent,
+    label: "11-18%",
+  },
+  {
+    value: "between_19_and_25",
+    img: Male_19To25percent,
+    label: "19-25%",
+  },
+  {
+    value: "more_than_26",
+    img: Male_moreThan26percent,
+    label: ">26%",
+  },
+];
+
+
 
 const CompleteProfilePage = () => {
   const { user } = useAuth();
@@ -64,8 +106,9 @@ const CompleteProfilePage = () => {
       dateOfBirth: "",
       weightInKgs: 0,
       heightInCms: 0,
-      bodyType: "mesomorph", // was undefined
+      bodyFatPercentage: "between_19_and_25", // was empty string
       activityLevel: "lightly_active", // was undefined
+      gender: "male", // was undefined
     },
   });
 
@@ -103,6 +146,40 @@ const CompleteProfilePage = () => {
               <FormLabel>Date of Birth</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="gender"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Gender</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  className="flex gap-4"
+                  defaultValue={field.value}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <RadioGroupItem
+                    value="male"
+                    id="gender-male"
+                  />
+                  <Label htmlFor="gender-male">Male</Label>
+                  <RadioGroupItem
+                    value="female"
+                    id="gender-female"
+                  />
+                  <Label htmlFor="gender-female">Female</Label>
+                  <RadioGroupItem
+                    value="other"
+                    id="gender-other"
+                  />
+                  <Label htmlFor="gender-other">Other</Label>
+                </RadioGroup>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -156,24 +233,55 @@ const CompleteProfilePage = () => {
         />
         <FormField
           control={form.control}
-          name="bodyType"
+          name="bodyFatPercentage"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Body Type</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                value={field.value}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select body type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ectomorph">Ectomorph</SelectItem>
-                  <SelectItem value="mesomorph">Mesomorph</SelectItem>
-                  <SelectItem value="endomorph">Endomorph</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormLabel>Body Fat Percentage</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  className="flex gap-4"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  {bodyFatOptions.map((option) => {
+                    const checked = field.value === option.value;
+                    return (
+                      <RadioGroupItem
+                        key={option.value}
+                        value={option.value}
+                        id={`bodyfat-${option.value}`}
+                        className="sr-only"
+                      />
+                    );
+                  })}
+                  {bodyFatOptions.map((option) => {
+                    const checked = field.value === option.value;
+                    return (
+                      <label
+                        key={option.value}
+                        htmlFor={`bodyfat-${option.value}`}
+                        className={`flex flex-col items-center cursor-pointer border rounded-lg p-2 transition
+                          ${
+                            checked
+                              ? "ring-2 ring-primary border-primary"
+                              : "border-muted"
+                          }
+                        `}
+                        tabIndex={0}
+                      >
+                        <Image
+                          src={option.img}
+                          alt={option.label}
+                          width={80}
+                          height={80}
+                          className="rounded mb-2"
+                        />
+                        <span className="text-xs">{option.label}</span>
+                      </label>
+                    );
+                  })}
+                </RadioGroup>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

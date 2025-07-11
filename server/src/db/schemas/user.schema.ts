@@ -1,8 +1,15 @@
 import { pgTable, uuid, varchar, timestamp, date, boolean, decimal, pgEnum } from 'drizzle-orm/pg-core';
 
-export const bodyTypeEnum = pgEnum('body_type', ["ectomorph", "mesomorph", "endomorph"]);
-
 export const userActivityLevelEnum = pgEnum('activity_level', ["sedentary", "lightly_active", "moderately_active", "very_active", "super_active"]);
+
+export const userBodyFatEnum = pgEnum('body_fat_percentage', [
+    "less_than_10",
+    "between_11_and_18",
+    "between_19_and_25",
+    "more_than_26"
+]);
+
+export const userGenderEnum = pgEnum('gender', ["male", "female", "other"]);
 
 export const users = pgTable('users', {
     id: uuid('id').defaultRandom().primaryKey(),
@@ -10,9 +17,10 @@ export const users = pgTable('users', {
     lastName: varchar('last_name', { length: 50 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     dateOfBirth: date('date_of_birth'),
+    gender: userGenderEnum('gender'),
     weightInKgs: decimal('weight', { precision: 5, scale: 2 }),
     heightInCms: decimal('height', { precision: 5, scale: 2 }),
-    bodyType: bodyTypeEnum('body_type'),
+    bodyFatPercentage: userBodyFatEnum('body_fat_percentage'),
     activityLevel: userActivityLevelEnum('activity_level'),
     isProfileComplete: boolean('is_profile_complete').default(false).notNull(),
     googleId: varchar('google_id', { length: 100 }).notNull().unique(),

@@ -4,11 +4,13 @@ import { users } from './user.schema';
 // Optional: enums for type/goal if needed
 export const dietTypeEnum = pgEnum('diet_type', [
   "vegetarian",
+  "eggetarian",
+  "nonvegetarian",
   "vegan",
   "keto",
   "paleo",
   "mediterranean",
-  "custom"
+  "gluten_free",
 ]);
 
 export const dietGoalEnum = pgEnum('diet_goal', [
@@ -23,8 +25,13 @@ export const diets = pgTable('diets', {
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description'),
   dietType: dietTypeEnum('diet_type').notNull(),
+  numberOfMeals: integer('number_of_meals').notNull().default(3),
   goal: dietGoalEnum('goal').notNull(),
+  intolerancesAndAllergies: text('intolerances_and_allergies'), // Comma-separated list of food intolerances
+  excludedFoods: text('excluded_foods'), // Comma-separated list of foods to exclude
   // Store the full plan as JSON
+  goal_duration_days: integer('goal_duration_days').notNull().default(30), // Duration in days for the goal
+  notes : text('notes'), // Additional notes for the diet plan
   plan: jsonb('plan').notNull(),
   totalProtein: decimal('total_protein', { precision: 5, scale: 2 }),
   totalCarbs: decimal('total_carbs', { precision: 5, scale: 2 }),

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import { number, z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -39,11 +39,13 @@ import withAuth from "@/components/withAuth";
 // Enums as per schema
 const dietTypeEnum = z.enum([
   "vegetarian",
+  "eggetarian",
+  "nonvegetarian",
   "vegan",
   "keto",
   "paleo",
   "mediterranean",
-  "custom",
+  "gluten_free",
 ]);
 const dietGoalEnum = z.enum(["weight_loss", "muscle_gain", "maintenance"]);
 
@@ -55,6 +57,17 @@ const formSchema = z.object({
     .number()
     .min(0, { message: "Desired weight is required" })
     .nonnegative(),
+  intolerancesAndAllergies: z
+    .string()
+    .max(100, { message: "Max 100 characters allowed" }),
+  excludedFoods: z.string().max(100, { message: "Max 100 characters allowed" }),
+  numberOfMeals: z.number().max(6, { message: "Max 6 meals allowed" }),
+  goalDurationDays: z
+    .number()
+    .min(7, { message: "Goal duration must be at least 7 days" })
+    .max(365, { message: "Goal duration cannot exceed 365 days" }),
+
+  notes: z.string().max(200, { message: "Max 200 characters allowed" }),
 });
 
 const CreateDietPlanPage = () => {
@@ -65,9 +78,14 @@ const CreateDietPlanPage = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      dietType: "custom",
+      dietType: "vegetarian",
       goal: "maintenance",
       desiredWeight: 0,
+      intolerancesAndAllergies: "",
+      excludedFoods: "",
+      numberOfMeals: 3, // Default to 3 meals
+      goalDurationDays: 30,
+      notes: "",
     },
   });
 
@@ -124,11 +142,14 @@ const CreateDietPlanPage = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="vegetarian">Vegetarian</SelectItem>
+                    <SelectItem value="eggetarian">Eggetarian</SelectItem>
+                    <SelectItem value="nonvegetarian">
+                      Non-Vegetarian
+                    </SelectItem>
                     <SelectItem value="vegan">Vegan</SelectItem>
                     <SelectItem value="keto">Keto</SelectItem>
                     <SelectItem value="paleo">Paleo</SelectItem>
                     <SelectItem value="mediterranean">Mediterranean</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -178,7 +199,105 @@ const CreateDietPlanPage = () => {
               </FormItem>
             )}
           />
-
+          <FormField
+            control={form.control}
+            name="intolerancesAndAllergies"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Food Intolerances and Allergies</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. nuts, dairy"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="excludedFoods"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Excluded Foods</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="e.g. gluten, soy"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="numberOfMeals"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Number of Meals</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="6"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="goalDurationDays"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Goal Duration (days)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="7"
+                    max="365"
+                    {...field}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Any additional notes"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <Button type="submit" className="w-full">
             Create Diet Plan
           </Button>
@@ -220,29 +339,28 @@ const CreateDietPlanPage = () => {
                     <TableRow key="total" className="bg-green-200 font-bold">
                       <TableCell
                         className="border px-2 py-1 text-center"
-                        colSpan={2}
+                        colSpan={4}
                       >
                         Total
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      {/* <TableCell className="border px-2 py-1 text-center">
                         {total.weight || ""}
-                      </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      </TableCell> */}
+                      <TableCell className="border px-2 py-1">
                         {total.protein || ""}
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      <TableCell className="border px-2 py-1 ">
                         {total.carbs || ""}
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      <TableCell className="border px-2 py-1 ">
                         {total.fats || ""}
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      <TableCell className="border px-2 py-1 ">
                         {total.fibers || ""}
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center">
+                      <TableCell className="border px-2 py-1 ">
                         {total.calories || ""}
                       </TableCell>
-                      <TableCell className="border px-2 py-1 text-center"></TableCell>
                     </TableRow>
                   );
                 }

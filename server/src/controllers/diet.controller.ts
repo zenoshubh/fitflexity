@@ -11,6 +11,7 @@ import { PineconeStore } from "@langchain/pinecone";
 import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { generateDietPlanWithAgent } from "@/utils/agents/dietPlanGenerator";
 
 
 const generateDietPlan = asyncHandler(async (req, res) => {
@@ -24,14 +25,16 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         weightInKgs: string | null;
         heightInCms: string | null;
         dateOfBirth: string | null;
-        bodyType: "ectomorph" | "mesomorph" | "endomorph" | null;
+        gender: "male" | "female" | "other" | null;
+        bodyFatPercentage: string | null;
         activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "super_active" | null;
     }[] =
         await db.select({
             weightInKgs: users.weightInKgs,
             heightInCms: users.heightInCms,
             dateOfBirth: users.dateOfBirth,
-            bodyType: users.bodyType,
+            gender: users.gender,
+            bodyFatPercentage: users.bodyFatPercentage,
             activityLevel: users.activityLevel
         }).from(users)
             .where(eq(users.id, user.id))
@@ -39,51 +42,20 @@ const generateDietPlan = asyncHandler(async (req, res) => {
     if (userDetails.length === 0 || !userDetails[0]) {
         throw new ApiError(404, "User details not found");
     }
-    const { weightInKgs, heightInCms, dateOfBirth, bodyType, activityLevel } = userDetails[0];
 
-    const { dietType, goal, desiredWeight } = req.body;
+    const { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes } = req.body;
 
-    if (!dietType || !goal || desiredWeight === undefined) {
+    if (!dietType || !goal || desiredWeight === undefined || numberOfMeals === undefined || goalDurationDays === undefined) {
         throw new ApiError(400, "All fields are required");
     }
 
-    const prompt = `
-You are a nutrition expert. Generate a detailed daily diet plan for fat loss for a user with the following details:
-
-- Age: ${dateOfBirth ? `${new Date().getFullYear() - new Date(dateOfBirth).getFullYear()} years` : "N/A"}
-- Weight: ${weightInKgs || "N/A"} kg
-- Height: ${heightInCms || "N/A"} cm
-- Body Type: ${bodyType || "N/A"}
-- Activity Level: ${activityLevel || "N/A"}
-- Diet Type: ${dietType}
-- Goal: ${goal}
-- Desired Weight: ${desiredWeight} kg
-
-**Instructions:**
-- The plan should be in JSON array format.
-- Each meal should have: mealNumber, mealName, items (array of objects with name, qty, protein, carbs, fats, fibers, calories).
-- Use the following JSON structure:
-[
-  {
-    "mealNumber": 1,
-    "mealName": "Breakfast",
-    "items": [
-      { "name": "Milk", "qty": "200 ml", "protein": 6, "carbs": 9.4, "fats": 7, "fibers": 0, "calories": 124 },
-      ...
-    ]
-  },
-  ...
-]
-- Include 4-6 meals (breakfast, lunch, snacks, dinner, etc).
-- For each item, provide realistic Indian food options and accurate nutritional values.
-- At the end, add a "Total" object with total weight, protein, carbs, fats, fibers, and calories for the day.
-- Do NOT include any explanation, only return the JSON array as described above.
-`;
-
     let planJson: any;
     try {
-        const dietPlan = await callGenAI(prompt);
-
+        // Use the LangGraph agent instead of direct LLM call
+        const dietPlan = await generateDietPlanWithAgent(
+            userDetails[0],
+            { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
+        );
 
         // Convert the AI response to string
         const dietPlanText = typeof dietPlan === 'string'
@@ -114,6 +86,11 @@ You are a nutrition expert. Generate a detailed daily diet plan for fat loss for
             description: `Auto-generated diet plan for ${goal.replace("_", " ")}.`,
             dietType,
             goal,
+            goal_duration_days: goalDurationDays,
+            intolerancesAndAllergies: intolerancesAndAllergies || null,
+            excludedFoods: excludedFoods || null,
+            numberOfMeals,
+            notes: notes || null,
             plan: planJson,
             totalProtein: totals.protein ? totals.protein : null,
             totalCarbs: totals.carbs ? totals.carbs : null,
@@ -133,6 +110,8 @@ You are a nutrition expert. Generate a detailed daily diet plan for fat loss for
 
 
         // --- Offload vector DB indexing to background ---
+
+        /* 
         setImmediate(async () => {
             try {
                 const pinecone = new PineconeClient({
@@ -201,7 +180,7 @@ You are a nutrition expert. Generate a detailed daily diet plan for fat loss for
                 // Optionally log error, but do not affect user response
             }
         });
-
+        */
         // Return here so no further code runs in this handler
         return;
 

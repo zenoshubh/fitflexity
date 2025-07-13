@@ -185,8 +185,8 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
             sameSite: 'lax' as const,
         };
 
-        res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: process.env.ACCESS_TOKEN_EXPIRY ? parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 1000 : 15 * 60 * 1000 }); // 15 minutes
-        res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: parseInt(process.env.ACCESS_TOKEN_EXPIRY!) * 1000 }); // 15 minutes
+        res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRY!) * 1000 }); // 7 days
 
         // 3️⃣ Redirect to frontend
         if (userData.isProfileComplete) {
@@ -335,6 +335,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: process.env.ACCESS_TOKEN_EXPIRY ? parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 1000 : 15 * 60 * 1000 }); // 15 minutes
         res.cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
+        console.log("Access token refreshed successfully");
 
         return res
             .status(200)

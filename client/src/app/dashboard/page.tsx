@@ -6,6 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+
+const HEADER_HEIGHT = 76;
+const FOOTER_HEIGHT = 56;
 
 const Dashboard = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -18,40 +23,67 @@ const Dashboard = () => {
     }
   }, [isAuthenticated]);
 
-  return !isAuthenticated || !user ? (
-    <Loader />
-  ) : (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-2">
+  if (!isAuthenticated || !user) {
+    return <Loader />;
+  }
+
+  return (
+    <div
+      className="min-h-screen flex flex-col relative bg-[#F7F7F9]"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px), radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px)",
+        backgroundSize: "28px 28px",
+        backgroundPosition: "0 0, 14px 14px",
+      }}
+    >
+      <Navbar />
+      <main
+        className="flex-1 flex flex-col items-center justify-center px-8 py-12 md:py-20 max-w-7xl mx-auto w-full"
+        style={{
+          paddingTop: `${HEADER_HEIGHT}px`,
+          paddingBottom: `${FOOTER_HEIGHT + 32}px`,
+        }}
+      >
+        <div className="w-full max-w-xl bg-white/80 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-2xl p-8 flex flex-col items-center gap-6">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-2 text-center">
             Welcome, {user.firstName}!
-          </h2>
-          <p className="text-gray-600">Email: {user.email}</p>
-          <p className="text-gray-600">Provider: {user.firstName}</p>
+          </h1>
+          <div className="text-gray-500 text-lg text-center mb-4">
+            <div>
+              Email:{" "}
+              <span className="font-medium text-gray-700">{user.email}</span>
+            </div>
+            <div>
+              Provider:{" "}
+              <span className="font-medium text-gray-700">
+                {"Google"}
+              </span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 w-full">
+            <Button
+              asChild
+              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg px-8 py-3 rounded-full shadow-lg transition"
+            >
+              <Link href="/create-diet-plan">Create Diet Plan</Link>
+            </Button>
+            <Button
+              asChild
+              className="w-full bg-orange-400 hover:bg-orange-500 text-white font-semibold text-lg px-8 py-3 rounded-full shadow-lg transition"
+            >
+              <Link href="/create-workout-plan">Create Workout Plan</Link>
+            </Button>
+            <Button
+              onClick={logout}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold text-lg px-8 py-3 rounded-full shadow transition"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
-
-        <Button
-          asChild
-          className="cursor-pointer w-full bg-green-500 hover:bg-green-600 text-white font-bold mb-2 py-2 px-4 rounded"
-        >
-          <Link href="/create-diet-plan">Create Diet Plan</Link>
-        </Button>
-        <Button
-          asChild
-          className="cursor-pointer w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold mb-2 py-2 px-4 rounded"
-        >
-          <Link href="/create-workout-plan">Create Workout Plan</Link>
-        </Button>
-
-        <Button
-          onClick={logout}
-          className="cursor-pointer w-full bg-red-500 hover:bg-red-600 text-white font-bold mb-2 py-2 px-4 rounded"
-        >
-          Logout
-        </Button>
-      </div>
+      </main>
+      <Footer />
     </div>
   );
 };

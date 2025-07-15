@@ -25,12 +25,11 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
             .select({
                 id: users.id,
                 firstName: users.firstName,
-                lastName: users.lastName,
                 email: users.email,
                 dateOfBirth: users.dateOfBirth,
+                weightInKgs: users.weightInKgs,
+                heightInCms: users.heightInCms,
                 isProfileComplete: users.isProfileComplete,
-                createdAt: users.createdAt,
-                updatedAt: users.updatedAt,
             })
             .from(users)
             .where(eq(users.id, decodedToken.userId))

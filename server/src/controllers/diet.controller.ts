@@ -12,7 +12,7 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { generateDietPlanWithAgent } from "@/utils/agents/dietPlanGenerator";
 import { llm } from "@/lib/llm";
-import { embeddings, pinecone } from "@/lib/rag";
+import { queue as embedDietPlanQueue } from "@/lib/bullmq";
 
 const generateDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -57,6 +57,10 @@ const generateDietPlan = asyncHandler(async (req, res) => {
             { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
         );
 
+        if (!dietPlan) {
+            throw new ApiError(500, "Failed to generate diet plan");
+        }
+
         // Convert the AI response to string
         const dietPlanText = typeof dietPlan === 'string'
             ? dietPlan
@@ -68,6 +72,11 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         // Try to extract JSON from the response (in case model adds extra text)
         const jsonMatch = dietPlanText.match(/\[.*\]/s);
         const jsonString = jsonMatch ? jsonMatch[0] : dietPlanText;
+
+        if (!jsonString) {
+            throw new ApiError(500, "Failed to parse diet plan response");
+        }
+
         planJson = JSON.parse(jsonString);
 
 
@@ -79,6 +88,9 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         );
         const totals = totalObj ? (totalObj.Total || totalObj.total) : {};
 
+        if (!totals || Object.keys(totals).length === 0) {
+            throw new ApiError(500, "Failed to extract totals from diet plan");
+        }
 
         const newDiet: NewDiet = {
             userId: user.id,
@@ -102,6 +114,9 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         // --- Save to DB ---
         const savedDiet = await db.insert(diets).values(newDiet).returning();
 
+        if (!savedDiet || savedDiet.length === 0) {
+            throw new ApiError(500, "Failed to save diet plan");
+        }
 
         // Respond to user immediately
         res.status(200).json(
@@ -110,8 +125,8 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
         // --- Offload vector DB indexing to background ---
 
-        /*
-         setImmediate(async () => {
+        {/*
+    setImmediate(async () => {
             try {
 
                 const indexName = "diet-plans";
@@ -171,7 +186,15 @@ const generateDietPlan = asyncHandler(async (req, res) => {
                 // Optionally log error, but do not affect user response
             }
         });
-        */
+    */}
+
+    await embedDietPlanQueue.add("embed-diet-plan", {
+        planJson,
+        userId: user.id,
+        goal: req.body.goal,
+        dietType: req.body.dietType,
+    });
+
         // Return here so no further code runs in this handler
         return;
 
@@ -335,7 +358,7 @@ const chatDietPlan = asyncHandler(async (req, res) => {
     });
 
     // 3. Prepare vector store
-    const indexName = "diet-plans-index";
+    const indexName = "diet-plans";
     const index = pinecone.Index(indexName);
     const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
         pineconeIndex: index,

@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun --hot src/index.ts"
+    "dev": "bun --hot src/index.ts",
+    "worker": "bun src/workers/embedDietPlan.worker.ts"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
@@ -27,9 +28,11 @@
     "@langchain/langgraph": "^0.3.7",
     "@langchain/mistralai": "^0.2.1",
     "@langchain/pinecone": "^0.2.0",
+    "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
+    "bullmq": "^5.56.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",

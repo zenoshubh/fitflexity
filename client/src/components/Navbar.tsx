@@ -76,7 +76,7 @@ const Navbar = () => {
               <div className="absolute right-8 top-16 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-40 animate-fade-in">
                 <div className="flex flex-col">
                   <Link
-                    href="/profile"
+                    href="/dashboard"
                     className="px-5 py-2 text-gray-700 hover:bg-orange-50 transition text-left"
                     onClick={() => setDropdownOpen(false)}
                   >

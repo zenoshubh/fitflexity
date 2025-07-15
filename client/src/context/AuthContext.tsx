@@ -27,7 +27,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
 
   const pathname = usePathname();
 
-  const isPublicRoute = ["/login", "/"].includes(pathname); // Add more if needed
+  const isPublicRoute = ["/"].includes(pathname); // Add more if needed
 
   const fetchCurrentUser = async (): Promise<void> => {
     try {

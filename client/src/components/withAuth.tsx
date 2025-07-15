@@ -12,7 +12,7 @@ const withAuth = <P extends object>(WrappedComponent: FC<P>): FC<P> => {
 
     useEffect(() => {
       if (!loading && !isAuthenticated) {
-        router.replace("/login");
+        router.replace("/");
       }
 
       if (!user?.isProfileComplete && isAuthenticated) {

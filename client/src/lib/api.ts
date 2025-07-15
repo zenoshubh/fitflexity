@@ -35,7 +35,7 @@ api.interceptors.response.use(
                 if (!isPublicRoute(getCurrentPath()) && typeof window !== "undefined") {
                     console.error("🔁 Refresh token failed:", refreshErr);
 
-                    window.location.href = "/login";
+                    window.location.href = "/";
                 }
             }
         }

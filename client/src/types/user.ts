@@ -3,6 +3,8 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  weightInKgs: number;
+  heightInCms: number;
   dateOfBirth?: string;
   isProfileComplete: boolean;
   createdAt: string;

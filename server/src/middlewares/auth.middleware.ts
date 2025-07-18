@@ -29,6 +29,9 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
                 dateOfBirth: users.dateOfBirth,
                 weightInKgs: users.weightInKgs,
                 heightInCms: users.heightInCms,
+                goal: users.goal,
+                gender: users.gender,
+                activityLevel: users.activityLevel,
                 isProfileComplete: users.isProfileComplete,
             })
             .from(users)

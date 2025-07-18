@@ -190,9 +190,9 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 
         // 3️⃣ Redirect to frontend
         if (userData.isProfileComplete) {
-            return res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+            return res.redirect(`${process.env.CLIENT_URL}/user/dashboard`);
         } else {
-            return res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
+            return res.redirect(`${process.env.CLIENT_URL}/user/complete-profile`);
         }
     } catch (err: any) {
         console.error("Google signup error details:", {
@@ -214,13 +214,13 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 });
 
 const completeProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, gender, weightInKgs, heightInCms, bodyFatPercentage, activityLevel } = req.body;
+    const { dateOfBirth, gender, weightInKgs, heightInCms, bodyFatPercentage, activityLevel, goal } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel) {
+    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel || !goal) {
         throw new ApiError(400, "All fields are required to complete the profile");
     }
 
@@ -234,6 +234,7 @@ const completeProfile = asyncHandler(async (req, res) => {
             heightInCms,
             bodyFatPercentage,
             activityLevel,
+            goal,
             isProfileComplete: true
         })
         .where(eq(users.id, req.user.id))

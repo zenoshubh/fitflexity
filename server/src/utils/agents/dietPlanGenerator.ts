@@ -53,7 +53,7 @@ const goalMap: Record<string, { weeklyChange: number, type: "fat" | "muscle" }> 
 };
 
 
-export async function generateDietPlanWithAgent(userDetails: any, dietPreferences: any) {
+export async function generateDietPlanWithLLM(userDetails: any, dietPreferences: any) {
     const { weightInKgs, heightInCms, dateOfBirth, bodyFatPercentage, activityLevel, gender } = userDetails;
     const { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
 

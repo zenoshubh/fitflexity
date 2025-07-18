@@ -7,11 +7,12 @@ import { users, type User } from "@/db/schemas/user.schema";
 import { diets, type NewDiet } from "@/db/schemas/diet.schema";
 import { PineconeStore } from "@langchain/pinecone";
 import { Document } from "@langchain/core/documents";
-import { generateDietPlanWithAgent } from "@/utils/agents/dietPlanGenerator";
+import { generateDietPlanWithLLM } from "@/utils/agents/dietPlanGenerator";
 import { llm } from "@/lib/llm";
 import { queue as embedDietPlanQueue } from "@/lib/bullmq";
-import { embeddings, vectorStore, vectorDbType } from "@/lib/rag";
+import { embeddings } from "@/lib/rag";
 import { AIMessageChunk } from "@langchain/core/messages";
+import { initialiseVectorStore } from "@/lib/vectorStore";
 
 const generateDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -52,8 +53,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
     let planJson: any;
     try {
-        // Use the LangGraph agent instead of direct LLM call
-        const dietPlan = await generateDietPlanWithAgent(
+        const dietPlan = await generateDietPlanWithLLM(
             userDetails[0],
             { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
         );
@@ -125,8 +125,8 @@ const generateDietPlan = asyncHandler(async (req, res) => {
     }
 });
 
-
 const fetchDietPlan = asyncHandler(async (req, res) => {
+
     const user = req.user;
 
     if (!user) {
@@ -272,27 +272,15 @@ const chatDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Question is required");
     }
 
-    // --- Use vectorStore and embeddings from rag.ts ---
-    let vectorStoreInstance: any;
-    if (vectorDbType === "pinecone") {
-        // Pinecone: vectorStore is PineconeClient, need PineconeStore
-        const indexName = "diet-plans";
-        const index = vectorStore.Index(indexName);
-        vectorStoreInstance = await PineconeStore.fromExistingIndex(embeddings, {
-            pineconeIndex: index,
-            textKey: "text",
-            namespace: "diet-plans",
-        });
-    } else {
-        // Qdrant: vectorStore is already a QdrantVectorStore instance
-        vectorStoreInstance = vectorStore;
-    }
+    const vectorStore = await initialiseVectorStore({
+        collectionName: "diet-plans"
+    });
 
     // 4. Prepare filter
     let filter: any = undefined;
     if (user && user.id) {
         // Qdrant expects filter as { must: [{ key: "...", match: { value: ... } }] }
-        if (vectorDbType === "qdrant") {
+        if (process.env.NODE_ENV === "development") {
             filter = {
                 must: [
                     {
@@ -316,7 +304,7 @@ const chatDietPlan = asyncHandler(async (req, res) => {
             filter
         );
         results = similaritySearchResults.map((doc: Document) => doc.pageContent);
-        console.log(`Found ${results.length} relevant diet plan entries for question: ${question} , db : ${vectorDbType}`);
+        console.log(`Found ${results.length} relevant diet plan entries for question: ${question}`);
     } catch (error) {
         console.error("Error querying diet plan:", error);
         // Qdrant 400 error: return empty result instead of throwing

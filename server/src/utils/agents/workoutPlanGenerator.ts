@@ -32,18 +32,36 @@ export const generateWorkoutPlanWithLLM = async ({
     - Notes: ${notes}
 
     Return a JSON array of workout sessions, each with the following structure:
-    {
-        "day": "Monday",
-        "exercises": [
-            {
-                "name": "Push-up",
-                "sets": 3,
-                "reps": 10
-            },
-            ...
-        ]
-    }
-
+    [   
+        {
+            "day": "Monday",
+            "exercises": [
+                {
+                    "name": "Push-up",
+                    "sets": 3,
+                    "reps": 10
+                },
+                {
+                    "name": "Squat",
+                    "sets": 3,
+                    "reps": 15
+                },
+            .....
+            ]
+        },
+        {
+            "day": "Tuesday",
+            "exercises": [
+                {
+                    "name": "Pull-up",
+                    "sets": 3,
+                    "reps": 8
+                },
+                ....
+            ]
+        },
+        ...
+    ]
     - Do NOT include any extra text, explanation, or markdown. Only output the JSON array as shown above.
     `;
 

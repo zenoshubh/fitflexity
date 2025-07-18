@@ -17,12 +17,14 @@ app.use(cookieParser());
 // ROUTES
 import userRouter from "./routes/user.routes";
 import dietRouter from "./routes/diet.routes";
+import workoutRouter from "./routes/workout.routes";
 import weightLogRouter from "./routes/weightLog.routes";
 import errorMiddleware from "./middlewares/error.middleware";
 
 // routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/diet", dietRouter);
+app.use("/api/v1/workout", workoutRouter);
 app.use("/api/v1/weight-log", weightLogRouter);
 
 // Error handling middleware

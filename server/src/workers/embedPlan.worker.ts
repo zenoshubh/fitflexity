@@ -7,19 +7,18 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 
 new Worker(
-  "embed-diet-plan",
+  "embed-plan",
   async job => {
     try {
-      const { planJson, userId, goal, dietType } = job.data;
+      const { planJson, userId, goal, planType } = job.data;
 
       const doc = new Document({
         pageContent: JSON.stringify(planJson),
         metadata: {
           userId,
-          type: "diet_plan",
+          type: planType,
           createdAt: new Date().toISOString(),
           goal,
-          dietType,
         }
       });
       const splitter = new RecursiveCharacterTextSplitter({
@@ -31,10 +30,10 @@ new Worker(
       if (vectorDbType === "qdrant") {
         // Qdrant logic (vectorStore already points to the collection)
         await vectorStore.addDocuments(splits);
-        console.log("Diet plan embedded in Qdrant for user:", userId);
+        console.log(`${planType} plan embedded in Qdrant for user: ${userId}`);
       } else {
         // Pinecone logic
-        const indexName = "diet-plans";
+        const indexName = `${planType}-plans`;
         const indexes = await vectorStore.listIndexes();
         const indexExists = indexes.indexes?.some((idx: { name: string }) => idx.name === indexName);
 
@@ -68,10 +67,10 @@ new Worker(
         const pineconeStore = await PineconeStore.fromExistingIndex(embeddings, {
           pineconeIndex: index,
           textKey: "text",
-          namespace: "diet-plans",
+          namespace: `${planType}-plans`,
         });
         await pineconeStore.addDocuments(splits);
-        console.log("Diet plan embedded in Pinecone for user:", userId);
+        console.log(`${planType} plan embedded in Pinecone for user: ${userId}`);
       }
     } catch (err) {
       console.error("Embedding job failed:", err);

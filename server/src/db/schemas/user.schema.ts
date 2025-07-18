@@ -9,6 +9,16 @@ export const userBodyFatEnum = pgEnum('body_fat_percentage', [
     "more_than_26"
 ]);
 
+export const goalEnum = pgEnum('goal', [
+  "maintain_weight",
+  "mild_weight_loss_0_25kg_per_week",
+  "weight_loss_0_5kg_per_week",
+  "extreme_weight_loss_1kg_per_week",
+  "mild_weight_gain_0_25kg_per_week",
+  "weight_gain_0_5kg_per_week",
+  "extreme_weight_gain_1kg_per_week"
+]);
+
 export const userGenderEnum = pgEnum('gender', ["male", "female", "other"]);
 
 export const users = pgTable('users', {
@@ -22,6 +32,7 @@ export const users = pgTable('users', {
     heightInCms: decimal('height', { precision: 5, scale: 2 }),
     bodyFatPercentage: userBodyFatEnum('body_fat_percentage'),
     activityLevel: userActivityLevelEnum('activity_level'),
+    goal: goalEnum('goal'),
     isProfileComplete: boolean('is_profile_complete').default(false).notNull(),
     googleId: varchar('google_id', { length: 100 }).notNull().unique(),
     refreshToken: varchar('refresh_token', { length: 500 }),

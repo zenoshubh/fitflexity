@@ -20,30 +20,42 @@ const TDEEcalculator = (bmr: number, activityLevel: number) => {
     return bmr * activityLevel;
 };
 
-const calorieCalculator =
-    (currentWeight: number, goalWeight: number, TDEE: number, goalDurationDays: number) => {
-        const weightDiff = goalWeight - currentWeight; // positive = gain, negative = loss
+// Returns the daily calorie intake for any goal (maintenance, loss, gain)
+function getGoalBasedDailyCalories({
+    tdee,
+    goalInfo
+}: {
+    tdee: number,
+    goalInfo: { weeklyChange: number, type: "fat" | "muscle" },
+}) {
+    if (goalInfo.weeklyChange === 0) return tdee;
 
-        // 1 kg fat ≈ 7700 kcal
-        const totalCaloriesToChange = weightDiff * 7700;
+    const kcalPerKg = goalInfo.type === "fat" ? 7700 : 2600;
+    const kcalPerWeek = goalInfo.weeklyChange * kcalPerKg;
+    const dailyAdjustment = kcalPerWeek / 7;
 
-        // Daily surplus or deficit
-        const dailyChange = totalCaloriesToChange / goalDurationDays;
+    return tdee + dailyAdjustment > 1500 ? tdee + dailyAdjustment : 1500; // Ensure minimum intake of 1500 kcal
+}
 
-        // Final calorie intake = TDEE ± dailyChange
-        const dailyCalorieIntake = TDEE + dailyChange;
+// Map goal to weekly change and type
+const goalMap: Record<string, { weeklyChange: number, type: "fat" | "muscle" }> = {
+    "maintain_weight": { weeklyChange: 0, type: "fat" }, // doesn't matter, 0 change
 
-        if (dailyCalorieIntake < 1200) {
-            return 1200; // Minimum daily intake to avoid malnutrition
-        }
+    // Fat loss
+    "mild_weight_loss_0_25kg_per_week": { weeklyChange: -0.25, type: "fat" },
+    "weight_loss_0_5kg_per_week": { weeklyChange: -0.5, type: "fat" },
+    "extreme_weight_loss_1kg_per_week": { weeklyChange: -1, type: "fat" },
 
-        return dailyCalorieIntake;
-    }
+    // Muscle gain
+    "mild_weight_gain_0_25kg_per_week": { weeklyChange: 0.25, type: "muscle" },
+    "weight_gain_0_5kg_per_week": { weeklyChange: 0.5, type: "muscle" },
+    "extreme_weight_gain_1kg_per_week": { weeklyChange: 1, type: "muscle" },
+};
 
 
 export async function generateDietPlanWithAgent(userDetails: any, dietPreferences: any) {
     const { weightInKgs, heightInCms, dateOfBirth, bodyFatPercentage, activityLevel, gender } = userDetails;
-    const { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes } = dietPreferences;
+    const { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
 
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : 30; // Default age of 30 if not provided
 
@@ -61,7 +73,14 @@ export async function generateDietPlanWithAgent(userDetails: any, dietPreference
 
     const bmr = BMRcalculator(weightInKgs, heightInCms, age as number, gender);
     const tdee = TDEEcalculator(bmr, activityMultiplier);
-    const dailyCalorieIntake = calorieCalculator(weightInKgs, desiredWeight, tdee, goalDurationDays);
+
+    // --- New goal logic ---
+    const goalInfo = goalMap[goal] || { weeklyChange: 0, type: "fat" }; // Default to maintenance
+    const dailyCalorieIntake = getGoalBasedDailyCalories({
+        tdee,
+        goalInfo,
+    });
+
     console.log(`BMR: ${bmr}, TDEE: ${tdee}, Daily Calorie Intake: ${dailyCalorieIntake}`);
 
     const PROMPT =
@@ -70,14 +89,15 @@ export async function generateDietPlanWithAgent(userDetails: any, dietPreference
     - Diet Type: ${dietType}
     - Daily Calorie Intake: ${dailyCalorieIntake} kcal
     - Number of Meals: ${numberOfMeals}
+    - No. of options per meal: ${numberOfMealOptions}
     - Intolerances / Allergies: ${intolerancesAndAllergies || "None"}
     - Excluded Foods: ${excludedFoods || "None"}
     - Notes: ${notes || "None"}
 
-    IMPORTANT POINTS:
+    IMPORTANT POINTS TO BE FOLLOWED(STRICTLY):
     - The total daily calorie (${dailyCalorieIntake}) intake should be distributed across ${numberOfMeals} meals.
     - The total calorie should be strictly equal to the daily calorie intake value provided (${dailyCalorieIntake} plus minus 20).
-    - Protein should be around 1.6-2.0g per kg of body weight.
+    - TOP PRIORITY: Protein should be around ${1.5 * desiredWeight} - ${2.0 * desiredWeight} grams. Include supplements if necessary.
     - Keep the diet plan healthy and balanced, considering the user's preferences, dietary restrictions, micro and macronutrient needs, and overall health.
 
     FORMAT:
@@ -87,24 +107,32 @@ export async function generateDietPlanWithAgent(userDetails: any, dietPreference
       {
         "mealNumber": 1,
         "mealName": "Breakfast",
-        "items": [
-          { "name": "Scrambled Eggs", "qty": "2 large", "fats": 9.5, "carbs": 1.1, "fibers": 0, "protein": 12.6, "calories": 143 },
-          { "name": "Cottage Cheese (Low-fat)", "qty": "150 g", "fats": 0, "carbs": 6, "fibers": 0, "protein": 15, "calories": 84 },
-          { "name": "Orange", "qty": "1 medium", "fats": 0.2, "carbs": 15.4, "fibers": 2.8, "protein": 1, "calories": 69 }
-        ]
-      },
-      ...
-      {
-        "Total": { "fats": 46.2, "carbs": 112.4, "fibers": 19.2, "protein": 105.6, "calories": 1272 }
-      }
+        "mealOptions": [
+            {
+                "items": [
+                    { "name": "Scrambled Eggs", "qty": "2 large", "fats": 9.5, "carbs": 1.1, "fibers": 0, "protein": 12.6, "calories": 143 },
+                    { "name": "Cottage Cheese (Low-fat)", "qty": "150 g", "fats": 0, "carbs": 6, "fibers": 0, "protein": 15, "calories": 84 },
+                    ...(other items as needed)...
+                    ]
+            },
+            {
+                "items": [
+                    { "name": "Oatmeal", "qty": "50 g", "fats": 3.5, "carbs": 27, "fibers": 4, "protein": 5, "calories": 150 },
+                    ...(other items as needed)...
+                    ]
+            },
+            ...(other meal options as needed)...
+            ]
+        },
+      ...(other meals as needed)...
     ]
 
     - Each meal should be an object with mealNumber, mealName, and an items array.
+    - Each meal option should be an object with an items array, and all options must have similar macronutrient distribution.
+    - Items array should contain only 1-3 items per meal option.
     - Each item must have: name, qty, fats, carbs, fibers, protein, calories.
-    - The last object in the array must be a "Total" object with summed macros for the day.
     - Do NOT include any extra text, explanation, or markdown. Only output the JSON array as shown above.
-    `
-
+    `;
     const result = await llm.invoke(PROMPT);
 
     console.log(`Diet Plan Generated\n: ${result.content}`);

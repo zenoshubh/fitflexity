@@ -5,14 +5,13 @@ import { asyncHandler } from "@/utils/asyncHandler";
 import { eq } from "drizzle-orm";
 import { users, type User } from "@/db/schemas/user.schema";
 import { diets, type NewDiet } from "@/db/schemas/diet.schema";
-import { MistralAIEmbeddings } from "@langchain/mistralai";
 import { PineconeStore } from "@langchain/pinecone";
-import { Pinecone as PineconeClient } from "@pinecone-database/pinecone";
 import { Document } from "@langchain/core/documents";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { generateDietPlanWithAgent } from "@/utils/agents/dietPlanGenerator";
 import { llm } from "@/lib/llm";
 import { queue as embedDietPlanQueue } from "@/lib/bullmq";
+import { embeddings, vectorStore, vectorDbType } from "@/lib/rag";
+import { AIMessageChunk } from "@langchain/core/messages";
 
 const generateDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -43,9 +42,11 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User details not found");
     }
 
-    const { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes } = req.body;
+    const goal = user.goal || "maintain_weight";
 
-    if (!dietType || !goal || desiredWeight === undefined || numberOfMeals === undefined || goalDurationDays === undefined) {
+    const { dietType, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes } = req.body;
+
+    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined || goalDurationDays === undefined) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -54,7 +55,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         // Use the LangGraph agent instead of direct LLM call
         const dietPlan = await generateDietPlanWithAgent(
             userDetails[0],
-            { dietType, goal, desiredWeight, numberOfMeals, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
+            { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
         );
 
         if (!dietPlan) {
@@ -80,35 +81,16 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         planJson = JSON.parse(jsonString);
 
 
-        // --- Extract totals from the "Total" object ---
-        const totalObj = planJson.find(
-            (row: any) =>
-                (row.Total || row.total) &&
-                typeof (row.Total || row.total) === "object"
-        );
-        const totals = totalObj ? (totalObj.Total || totalObj.total) : {};
-
-        if (!totals || Object.keys(totals).length === 0) {
-            throw new ApiError(500, "Failed to extract totals from diet plan");
-        }
-
         const newDiet: NewDiet = {
             userId: user.id,
             name: `${goal.replace("_", " ")} Diet Plan`,
             description: `Auto-generated diet plan for ${goal.replace("_", " ")}.`,
             dietType,
-            goal,
-            goal_duration_days: goalDurationDays,
             intolerancesAndAllergies: intolerancesAndAllergies || null,
             excludedFoods: excludedFoods || null,
             numberOfMeals,
             notes: notes || null,
             plan: planJson,
-            totalProtein: totals.protein ? totals.protein : null,
-            totalCarbs: totals.carbs ? totals.carbs : null,
-            totalFats: totals.fats ? totals.fats : null,
-            totalFibers: totals.fibers ? totals.fibers : null,
-            totalCalories: totals.calories ? totals.calories : null,
         }
 
         // --- Save to DB ---
@@ -125,75 +107,15 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
         // --- Offload vector DB indexing to background ---
 
-        {/*
-    setImmediate(async () => {
-            try {
-
-                const indexName = "diet-plans";
-                const indexes = await pinecone.listIndexes();
-                const indexExists = indexes.indexes?.some(idx => idx.name === indexName);
-
-                if (!indexExists) {
-                    await pinecone.createIndex({
-                        name: indexName,
-                        dimension: 1024,
-                        metric: "cosine",
-                        spec: {
-                            serverless: {
-                                cloud: "aws",
-                                region: "us-east-1"
-                            }
-                        }
-                    });
-                    // Wait for index to be ready (shorter, less blocking)
-                    let isReady = false, attempts = 0, maxAttempts = 10;
-                    while (!isReady && attempts < maxAttempts) {
-                        try {
-                            await pinecone.Index(indexName).describeIndexStats();
-                            isReady = true;
-                        } catch {
-                            attempts++;
-                            await new Promise(res => setTimeout(res, 1000));
-                        }
-                    }
-                    if (!isReady) return;
-                }
-
-                const index = pinecone.Index(indexName);
-                const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
-                    pineconeIndex: index,
-                    textKey: "text",
-                    namespace: "diet-plans",
-                });
-
-                const doc = new Document({
-                    pageContent: JSON.stringify(planJson),
-                    metadata: {
-                        userId: user.id,
-                        type: "diet_plan",
-                        createdAt: new Date().toISOString(),
-                        goal: req.body.goal,
-                        dietType: req.body.dietType,
-                    }
-                });
-                const splitter = new RecursiveCharacterTextSplitter({
-                    chunkSize: 1000,
-                    chunkOverlap: 200,
-                });
-                const splits = await splitter.splitDocuments([doc]);
-                await vectorStore.addDocuments(splits);
-            } catch (err) {
-                // Optionally log error, but do not affect user response
-            }
+        await embedDietPlanQueue.add("embed-diet-plan", {
+            planJson,
+            userId: user.id,
+            goal: goal,
+            planType: "diet",
         });
-    */}
 
-    await embedDietPlanQueue.add("embed-diet-plan", {
-        planJson,
-        userId: user.id,
-        goal: req.body.goal,
-        dietType: req.body.dietType,
-    });
+
+
 
         // Return here so no further code runs in this handler
         return;
@@ -202,6 +124,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to generate or parse diet plan");
     }
 });
+
 
 const fetchDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -342,44 +265,64 @@ const chatDietPlan = asyncHandler(async (req, res) => {
 
     const { question } = req.body;
 
+    console.log(`User ${user.id} asked: ${question}`);
+
+
     if (!question) {
         throw new ApiError(400, "Question is required");
     }
 
-    // 1. Initialize Pinecone client
-    const pinecone = new PineconeClient({
-        apiKey: process.env.PINECONE_API_KEY!,
-    });
-
-    // 2. Initialize MistralAI embeddings
-    const embeddings = new MistralAIEmbeddings({
-        apiKey: process.env.MISTRAL_API_KEY!,
-        model: "mistral-embed",
-    });
-
-    // 3. Prepare vector store
-    const indexName = "diet-plans";
-    const index = pinecone.Index(indexName);
-    const vectorStore = await PineconeStore.fromExistingIndex(embeddings, {
-        pineconeIndex: index,
-        textKey: "text",
-        namespace: "diet-plans",
-    });
+    // --- Use vectorStore and embeddings from rag.ts ---
+    let vectorStoreInstance: any;
+    if (vectorDbType === "pinecone") {
+        // Pinecone: vectorStore is PineconeClient, need PineconeStore
+        const indexName = "diet-plans";
+        const index = vectorStore.Index(indexName);
+        vectorStoreInstance = await PineconeStore.fromExistingIndex(embeddings, {
+            pineconeIndex: index,
+            textKey: "text",
+            namespace: "diet-plans",
+        });
+    } else {
+        // Qdrant: vectorStore is already a QdrantVectorStore instance
+        vectorStoreInstance = vectorStore;
+    }
 
     // 4. Prepare filter
-    const filter: any = {};
-    if (user) {
-        if (user.id) filter.userId = user.id;
+    let filter: any = undefined;
+    if (user && user.id) {
+        // Qdrant expects filter as { must: [{ key: "...", match: { value: ... } }] }
+        if (vectorDbType === "qdrant") {
+            filter = {
+                must: [
+                    {
+                        key: "metadata.userId",
+                        match: { value: user.id }
+                    }
+                ]
+            };
+        } else {
+            // Pinecone expects a plain object
+            filter = { userId: user.id };
+        }
     }
 
     // 5. Similarity search
     let results;
     try {
-        results = await vectorStore.similaritySearch(question, 2, filter);
-        results = JSON.parse(JSON.stringify(results))
+        const similaritySearchResults = await vectorStore.similaritySearch(
+            question,
+            2,
+            filter
+        );
+        results = similaritySearchResults.map((doc: Document) => doc.pageContent);
+        console.log(`Found ${results.length} relevant diet plan entries for question: ${question} , db : ${vectorDbType}`);
     } catch (error) {
         console.error("Error querying diet plan:", error);
-        throw new ApiError(500, "Error querying diet plan database");
+        // Qdrant 400 error: return empty result instead of throwing
+        return res.status(200).json(
+            new ApiResponse(200, { context: null, sources: [] }, "No relevant information found in diet plan database")
+        );
     }
 
     if (!results || results.length === 0) {
@@ -388,10 +331,12 @@ const chatDietPlan = asyncHandler(async (req, res) => {
         );
     }
 
-    const SYSTEM_PROMPT = `You are a helpful AI assistant. You will be provided with some context from a user's diet plan. 
+    const SYSTEM_PROMPT = `You are a helpful Nutrition and Fitness assistant. You will be provided with some context from a user's diet plan. 
 Use this context as a reference to answer the user's question. 
-If the answer is not directly available in the context, you can use your own knowledge and expertise to provide a helpful, detailed, and accurate response. 
-Feel free to explain concepts, give suggestions, or add extra information even if it is not explicitly mentioned in the context.
+If the answer is not directly available in the context, you can use your own nutrition knowledge and expertise to provide a helpful, detailed, and accurate response. 
+Feel free to explain concepts, give suggestions, or add extra information even if it is not explicitly mentioned in the context. In case if user question is not related to diet plan, politely inform them that you can only answer questions related to their diet plan and general nutrition. 
+You can answer meal recipes also.
+IMPORTANT: Reply in less than 200 words. 
 
 Context:
 ${JSON.stringify(results)}
@@ -399,21 +344,10 @@ ${JSON.stringify(results)}
 User Question: ${question}
 `;
 
-    const answer = await llm.invoke(SYSTEM_PROMPT)
-
-    // // 6. Build context and sources
-    // const context = results.map((doc, idx) =>
-    //     `Context ${idx + 1} (${doc.metadata.type}):\n${doc.pageContent}`
-    // ).join('\n\n');
-
-    // const sources = results.map(doc => ({
-    //     type: doc.metadata.type,
-    //     planId: doc.metadata.planId,
-    //     createdAt: doc.metadata.createdAt,
-    // }));
-
+    let answer = await llm.invoke(SYSTEM_PROMPT)
+    const answerText = answer.content.toString();
     return res.status(200).json(
-        new ApiResponse(200, { answer }, "Relevant diet plan information found")
+        new ApiResponse(200, { answer: answerText }, "Relevant diet plan information found")
     );
 });
 

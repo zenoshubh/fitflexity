@@ -48,16 +48,28 @@ const Navbar = () => {
           Home
         </Link>
         <Link
-          href="/create-diet-plan"
+          href="/diet/create-diet-plan"
           className="text-gray-600 hover:text-orange-600 transition"
         >
           Create Diet Plan
         </Link>
         <Link
-          href="/view-diet-plan"
+          href="/diet/view-diet-plan"
           className="text-gray-600 hover:text-orange-600 transition"
         >
           View Diet Plan
+        </Link>
+        <Link
+          href="/workout/create-workout-plan"
+          className="text-gray-600 hover:text-orange-600 transition"
+        >
+          Create Workout Plan
+        </Link>
+        <Link
+          href="/workout/view-workout-plan"
+          className="text-gray-600 hover:text-orange-600 transition"
+        >
+          View Workout Plan
         </Link>
       </nav>
       <div className="flex items-center gap-4" ref={dropdownRef}>
@@ -76,7 +88,7 @@ const Navbar = () => {
               <div className="absolute right-8 top-16 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-40 animate-fade-in">
                 <div className="flex flex-col">
                   <Link
-                    href="/dashboard"
+                    href="/user/dashboard"
                     className="px-5 py-2 text-gray-700 hover:bg-orange-50 transition text-left"
                     onClick={() => setDropdownOpen(false)}
                   >
@@ -109,4 +121,3 @@ const Navbar = () => {
 };
 
 export default Navbar;
-

@@ -47,7 +47,7 @@ const Home = () => {
             trusted by thousands to achieve their health goals.
           </p>
           <Link
-            href="/create-diet-plan"
+            href="/diet/create-diet-plan"
             className="inline-block w-fit bg-orange-500 hover:bg-orange-600 text-white font-semibold text-lg px-8 py-3 rounded-full shadow-lg transition"
           >
             Get Started

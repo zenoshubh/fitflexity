@@ -45,9 +45,9 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
     const goal = user.goal || "maintain_weight";
 
-    const { dietType, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes } = req.body;
+    const { dietType, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = req.body;
 
-    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined || goalDurationDays === undefined) {
+    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined ) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -55,7 +55,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
     try {
         const dietPlan = await generateDietPlanWithLLM(
             userDetails[0],
-            { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, goalDurationDays, notes }
+            { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
         );
 
         if (!dietPlan) {

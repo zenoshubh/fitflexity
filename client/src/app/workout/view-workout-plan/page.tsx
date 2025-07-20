@@ -9,22 +9,13 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
-
-const HEADER_HEIGHT = 76;
-const FOOTER_HEIGHT = 56;
+import { Edit3, Send, Dumbbell } from "lucide-react";
 
 type ChatFormValues = {
   chatQuery: string;
@@ -41,16 +32,20 @@ type WorkoutSession = {
   exercises: Exercise[];
 };
 
+const HEADER_HEIGHT = 76;
+const FOOTER_HEIGHT = 56;
+
 const ViewWorkoutPlanPage = () => {
   const [workoutPlan, setWorkoutPlan] = useState<WorkoutSession[] | null>(null);
   const [chatResponse, setChatResponse] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [answer, setAnswer] = useState<string>("");
   const [editMode, setEditMode] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [selectedSessionIdx, setSelectedSessionIdx] = useState<number | null>(
     null
   );
+  const [selectedTab, setSelectedTab] = useState<string>("0");
 
   const form = useForm<ChatFormValues>({
     defaultValues: {
@@ -80,7 +75,7 @@ const ViewWorkoutPlanPage = () => {
 
   // Chat handler (normal and edit mode)
   const handleChat = async (values: ChatFormValues) => {
-    setLoading(true);
+    setChatLoading(true);
     setChatResponse(null);
 
     if (
@@ -111,7 +106,7 @@ const ViewWorkoutPlanPage = () => {
         toast.error(err?.response?.data?.message || "Something went wrong.");
       }
       setUpdating(false);
-      setLoading(false);
+      setChatLoading(false);
       return;
     }
 
@@ -130,12 +125,14 @@ const ViewWorkoutPlanPage = () => {
       setChatResponse("Something went wrong.");
       toast.error(err.response?.data?.message || "Something went wrong.");
     }
-    setLoading(false);
+    setChatLoading(false);
   };
 
   // Helper for session selection in edit mode
   const handleSessionSelect = (idx: number) => {
     setSelectedSessionIdx(idx === selectedSessionIdx ? null : idx);
+    form.setValue("chatQuery", "");
+    setChatResponse(null);
   };
 
   return (
@@ -148,202 +145,239 @@ const ViewWorkoutPlanPage = () => {
         backgroundPosition: "0 0, 14px 14px",
       }}
     >
-      <Navbar />
       <main
-        className="flex-1 flex flex-col md:flex-row items-start justify-center px-4 py-12 md:py-20 max-w-7xl mx-auto w-full gap-8"
-        style={{
-          paddingTop: `${HEADER_HEIGHT}px`,
-          paddingBottom: `${FOOTER_HEIGHT + 32}px`,
-        }}
+        className="flex-1 w-full pt-6 pb-6 md:pt-12 md:pb-12"
       >
-        {/* Workout Plan Table Section */}
-        <div className="flex-1 flex flex-col items-center">
-          <div
-            className="w-full bg-white/80 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-2xl p-6 mb-8"
-            style={{
-              maxWidth: "100%",
-              minWidth: 0,
-              overflow: "visible",
-            }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-extrabold text-orange-700 text-center tracking-tight">
-                Your Workout Plan
-              </h2>
-              <label className="flex items-center gap-2 text-sm font-medium text-orange-700 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={editMode}
-                  onChange={() => {
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8 max-w-7xl mx-auto px-1 sm:px-2 md:px-8 h-auto md:h-[calc(100vh-96px)]">
+          {/* Workout Plan Section */}
+          <section className="flex-1 h-full flex flex-col min-h-0">
+            <div
+              className="h-full w-full bg-white/80 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-2xl p-3 sm:p-4 md:p-6 flex-1 flex flex-col min-h-0"
+              style={{
+                maxWidth: "100%",
+                minWidth: 0,
+                overflow: "visible",
+              }}
+            >
+              <div className="flex sm:flex-row items-start sm:items-center justify-between mb-4 md:mb-6 gap-2">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-orange-700 text-center tracking-tight">
+                  Your Workout Plan
+                </h2>
+                <button
+                  className={`flex items-center gap-2 text-sm font-medium text-orange-700 px-3 py-1 rounded-full transition
+                    ${editMode ? "bg-orange-100 shadow" : "hover:bg-orange-50"}
+                  `}
+                  onClick={() => {
                     setEditMode((v) => !v);
                     setSelectedSessionIdx(null);
                   }}
-                  className="accent-orange-500 w-4 h-4"
-                />
-                Edit Workout Plan Mode
-              </label>
-            </div>
-            {workoutPlan && Array.isArray(workoutPlan) ? (
-              <div
-                className="w-full"
-                style={{
-                  overflowX: "auto",
-                  maxHeight: "none",
-                  minHeight: 0,
-                }}
-              >
-                <Table
-                  className="w-full border border-orange-200 bg-white/80 rounded-xl text-xs"
-                  style={{
-                    tableLayout: "auto",
-                    width: "100%",
-                    minWidth: 600,
-                  }}
+                  type="button"
                 >
-                  <TableHeader>
-                    <TableRow className="bg-orange-500 text-white">
-                      {editMode && (
-                        <TableHead className="border px-1 py-1"></TableHead>
-                      )}
-                      <TableHead className="border px-1 py-1">Day</TableHead>
-                      <TableHead className="border px-1 py-1">
-                        Exercise
-                      </TableHead>
-                      <TableHead className="border px-1 py-1">Sets</TableHead>
-                      <TableHead className="border px-1 py-1">Reps</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {workoutPlan.map((session, sessionIdx) =>
-                      session.exercises.map((exercise, exIdx) => (
-                        <TableRow
-                          key={`${session.day}-${exercise.name}-${exIdx}`}
-                          className={
-                            editMode && selectedSessionIdx === sessionIdx
-                              ? "bg-orange-50"
-                              : ""
-                          }
+                  <Edit3
+                    className={`transition ${
+                      editMode ? "text-orange-500" : "text-orange-300"
+                    }`}
+                    size={20}
+                  />
+                  <span className="hidden md:inline">Edit Workout Plan</span>
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto pr-0 md:pr-2">
+                {workoutPlan && Array.isArray(workoutPlan) && workoutPlan.length > 0 ? (
+                  <Tabs
+                    value={selectedTab}
+                    onValueChange={setSelectedTab}
+                    className="w-full"
+                  >
+                    <TabsList className="mb-4 flex gap-2 bg-orange-50 rounded-full p-1 overflow-x-auto scrollbar-thin scrollbar-thumb-orange-200 scrollbar-track-transparent">
+                      {workoutPlan.map((session, idx) => (
+                        <TabsTrigger
+                          key={session.day}
+                          value={String(idx)}
+                          className={`px-3 sm:px-4 py-1 rounded-full border text-xs font-semibold transition whitespace-nowrap
+                            ${
+                              selectedTab === String(idx)
+                                ? "bg-orange-500 text-white border-orange-500 shadow"
+                                : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"
+                            }
+                          `}
                         >
-                          {/* Edit mode: select session (only on first row of the session) */}
-                          {editMode && exIdx === 0 && (
-                            <TableCell
-                              className="border px-2 py-1 text-center align-middle"
-                              rowSpan={session.exercises.length}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedSessionIdx === sessionIdx}
-                                onChange={() => handleSessionSelect(sessionIdx)}
-                                className="accent-orange-500 w-5 h-5"
+                          {session.day}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                    {workoutPlan.map((session, idx) => (
+                      <TabsContent
+                        key={session.day}
+                        value={String(idx)}
+                        className="focus:outline-none"
+                      >
+                        <div className="flex flex-col gap-4">
+                          {/* Edit mode select button */}
+                          {editMode && (
+                            <div className="mb-2 flex">
+                              <button
+                                type="button"
+                                className={`rounded-full p-1 border-2 transition
+                                  ${selectedSessionIdx === idx
+                                    ? "border-orange-500 bg-orange-100"
+                                    : "border-orange-200 bg-white"}
+                                `}
+                                onClick={() => handleSessionSelect(idx)}
                                 disabled={updating}
+                                aria-label="Select workout day to edit"
+                              >
+                                <Edit3
+                                  size={18}
+                                  className={`transition cursor-pointer ${
+                                    selectedSessionIdx === idx
+                                      ? "text-orange-500"
+                                      : "text-orange-300"
+                                  }`}
+                                />
+                              </button>
+                              <span className="ml-2 text-sm text-orange-700 font-medium self-center">
+                                {selectedSessionIdx === idx
+                                  ? "Selected for edit"
+                                  : "Edit this day"}
+                              </span>
+                            </div>
+                          )}
+                          {/* Responsive Exercises Table */}
+                          <div className="overflow-x-auto w-full">
+                            <table className="w-full border-separate border-spacing-0 rounded-2xl overflow-hidden bg-orange-50/60 shadow-sm text-sm min-w-[340px] sm:min-w-[420px] md:min-w-[520px]">
+                              <thead>
+                                <tr className="bg-orange-100 text-orange-700">
+                                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-left rounded-tl-2xl">Exercise</th>
+                                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-center">Sets</th>
+                                  <th className="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-center rounded-tr-2xl">Reps</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {session.exercises.map((exercise, exIdx) => (
+                                  <tr
+                                    key={exercise.name + exIdx}
+                                    className="even:bg-orange-50 odd:bg-white/80 transition"
+                                  >
+                                    <td className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-orange-900 whitespace-pre-line break-words rounded-bl-2xl max-w-[120px] sm:max-w-[180px]">
+                                      {exercise.name}
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-center text-orange-700 font-semibold">
+                                      {exercise.sets}
+                                    </td>
+                                    <td className="px-3 sm:px-4 py-2 sm:py-3 text-center text-orange-700 font-semibold rounded-br-2xl">
+                                      {exercise.reps}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    No Workout Plan Found
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+          {/* Chat/Edit Section */}
+          <section className="w-full md:w-[420px] max-w-full flex flex-col min-h-0 mt-4 md:mt-0">
+            <div className="flex flex-col h-full min-h-0 bg-white/70 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-xl glassmorphic-card overflow-hidden">
+              <div className="px-4 sm:px-8 pt-8 pb-4">
+                <h3 className="text-lg font-bold text-orange-700 text-center tracking-tight">
+                  {editMode
+                    ? "Edit Selected Workout Day"
+                    : "Ask About Your Workout Plan"}
+                </h3>
+              </div>
+              {/* Chat messages area */}
+              <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-4 flex flex-col-reverse">
+                {chatResponse && !editMode ? (
+                  <div className="bg-orange-50/80 text-sm border-0 shadow-none rounded-xl p-4 text-orange-900 mb-2">
+                    <Markdown>{answer}</Markdown>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full min-h-[180px] text-center text-orange-700/80">
+                    <Dumbbell size={48} className="mb-3 text-orange-300" />
+                    <div className="text-lg font-semibold mb-1">
+                      Ask anything about your workout plan!
+                    </div>
+                    <div className="text-sm text-orange-600">
+                      You can ask queries regarding your workout plan, get exercise suggestions, or seek general advice and tips.
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Input area fixed at bottom */}
+              <div className="border-t border-orange-100 bg-white/80 px-4 sm:px-8 py-4">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(handleChat)}
+                    className="w-full"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="chatQuery"
+                      rules={{ required: "Please enter your question" }}
+                      render={({ field }) => (
+                        <FormItem className="w-full">
+                          <div className="relative w-full">
+                            <FormControl>
+                              <textarea
+                                rows={2}
+                                placeholder={
+                                  editMode
+                                    ? selectedSessionIdx !== null
+                                      ? "Describe the changes you want in this workout day..."
+                                      : "Select a workout day to edit"
+                                    : "Type your message here..."
+                                }
+                                disabled={
+                                  chatLoading ||
+                                  (editMode && selectedSessionIdx === null) ||
+                                  updating
+                                }
+                                className="w-full pr-16 rounded-xl border-2 border-orange-200 focus:border-orange-400 focus:ring-orange-300 bg-white/80 p-3 resize-none text-base transition-all min-h-[44px] max-h-[120px]"
+                                style={{ minHeight: 44, maxHeight: 120 }}
+                                {...field}
                               />
-                            </TableCell>
-                          )}
-                          {editMode && exIdx !== 0 && null}
-                          {/* Day (only on first row of the session) */}
-                          {exIdx === 0 && (
-                            <TableCell
-                              className="border px-2 py-1 text-center font-semibold"
-                              rowSpan={session.exercises.length}
+                            </FormControl>
+                            <Button
+                              type="submit"
+                              disabled={
+                                chatLoading ||
+                                updating ||
+                                !form.watch("chatQuery").trim() ||
+                                (editMode && selectedSessionIdx === null)
+                              }
+                              className="absolute top-1/2 right-2 -translate-y-1/2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-4 py-2 text-base font-semibold flex items-center justify-center gap-2 shadow transition"
+                              tabIndex={-1}
                             >
-                              {session.day}
-                            </TableCell>
-                          )}
-                          {exIdx !== 0 && null}
-                          {/* Exercise details */}
-                          <TableCell className="border px-2 py-1 break-words whitespace-pre-line max-w-[120px]">
-                            {exercise.name}
-                          </TableCell>
-                          <TableCell className="border px-2 py-1 text-center">
-                            {exercise.sets}
-                          </TableCell>
-                          <TableCell className="border px-2 py-1 text-center">
-                            {exercise.reps}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                              {updating ? (
+                                "..."
+                              ) : chatLoading ? (
+                                editMode ? "..." : "..."
+                              ) : editMode ? (
+                                <><Send size={18} className="mr-1" /></>
+                              ) : (
+                                <><Send size={18} className="mr-1" /></>
+                              )}
+                            </Button>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+                </Form>
               </div>
-            ) : (
-              <p className="text-center text-gray-500">Loading...</p>
-            )}
-          </div>
-        </div>
-        {/* Chat Section */}
-        <div className="w-full md:max-w-md flex flex-col">
-          <div className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-3xl shadow-xl p-8 flex flex-col h-full min-h-[340px]">
-            <h3 className="text-lg font-bold mb-4 text-orange-700 text-center tracking-tight">
-              {editMode
-                ? "Edit Selected Workout Day"
-                : "Ask About Your Workout Plan"}
-            </h3>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(handleChat)}
-                className="flex flex-col gap-4 mb-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="chatQuery"
-                  rules={{ required: "Please enter your question" }}
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormControl>
-                        <textarea
-                          rows={4}
-                          placeholder={
-                            editMode
-                              ? selectedSessionIdx !== null
-                                ? "Describe the changes you want in this workout day..."
-                                : "Select a workout day to edit"
-                              : "Ask about your workout plan..."
-                          }
-                          disabled={
-                            loading ||
-                            (editMode && selectedSessionIdx === null) ||
-                            updating
-                          }
-                          className="w-full rounded-xl border-orange-200 focus:border-orange-400 focus:ring-orange-300 bg-white/80 p-3 resize-none text-base"
-                          style={{ minHeight: 80 }}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  disabled={
-                    loading ||
-                    updating ||
-                    !form.watch("chatQuery").trim() ||
-                    (editMode && selectedSessionIdx === null)
-                  }
-                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl px-6 py-3 text-base font-semibold"
-                >
-                  {updating
-                    ? "Updating..."
-                    : loading
-                    ? editMode
-                      ? "Updating..."
-                      : "Asking..."
-                    : editMode
-                    ? "Update Workout"
-                    : "Ask"}
-                </Button>
-              </form>
-            </Form>
-            {chatResponse && !editMode && (
-              <div className="flex-1 overflow-y-auto mt-2">
-                <div className="bg-orange-50/80 border-0 shadow-none rounded-xl p-4">
-                  <Markdown>{answer}</Markdown>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          </section>
         </div>
       </main>
       {/* Add <Footer /> if needed */}
@@ -352,3 +386,4 @@ const ViewWorkoutPlanPage = () => {
 };
 
 export default ViewWorkoutPlanPage;
+

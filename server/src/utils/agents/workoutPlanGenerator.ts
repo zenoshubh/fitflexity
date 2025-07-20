@@ -35,6 +35,7 @@ export const generateWorkoutPlanWithLLM = async ({
     [   
         {
             "day": "Monday",
+            "name": "Upper Body Workout",
             "exercises": [
                 {
                     "name": "Push-up",
@@ -42,18 +43,19 @@ export const generateWorkoutPlanWithLLM = async ({
                     "reps": 10
                 },
                 {
-                    "name": "Squat",
+                    "name": "Dumbbell Bench Press",
                     "sets": 3,
-                    "reps": 15
+                    "reps": 12
                 },
             .....
             ]
         },
         {
             "day": "Tuesday",
+            "name": "Lower Body Workout",
             "exercises": [
                 {
-                    "name": "Pull-up",
+                    "name": "Squat",
                     "sets": 3,
                     "reps": 8
                 },

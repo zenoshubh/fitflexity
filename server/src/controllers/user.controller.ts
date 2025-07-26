@@ -53,7 +53,7 @@ interface GoogleUserInfo {
 
 const initiateGoogleAuth = asyncHandler(async (req, res) => {
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-    const REDIRECT_URI = `${process.env.BASE_URL}/api/v1/users/auth/google/callback`;
+    const REDIRECT_URI = `http://localhost:8000/api/v1/users/auth/google/callback`;
 
     if (!CLIENT_ID) {
         throw new ApiError(500, "Google OAuth configuration missing");
@@ -73,7 +73,7 @@ const initiateGoogleAuth = asyncHandler(async (req, res) => {
 const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
     const CLIENT_ID: string | undefined = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET: string | undefined = process.env.GOOGLE_CLIENT_SECRET;
-    const REDIRECT_URI: string = `${process.env.BASE_URL}/api/v1/users/auth/google/callback`;
+    const REDIRECT_URI: string = `http://localhost:8000/api/v1/users/auth/google/callback`;
 
     // Validate environment variables
     if (!CLIENT_ID || !CLIENT_SECRET) {
@@ -190,9 +190,9 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 
         // 3️⃣ Redirect to frontend
         if (userData.isProfileComplete) {
-            return res.redirect(`${process.env.CLIENT_URL}/user/dashboard`);
+            return res.redirect(`http://localhost:3000/user/dashboard`);
         } else {
-            return res.redirect(`${process.env.CLIENT_URL}/user/complete-profile`);
+            return res.redirect(`http://localhost:3000/user/complete-profile`);
         }
     } catch (err: any) {
         console.error("Google signup error details:", {

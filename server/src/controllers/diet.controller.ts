@@ -280,7 +280,7 @@ const chatDietPlan = asyncHandler(async (req, res) => {
     let filter: any = undefined;
     if (user && user.id) {
         // Qdrant expects filter as { must: [{ key: "...", match: { value: ... } }] }
-        if (process.env.NODE_ENV === "development") {
+        if (process.env.VECTOR_DB_TYPE === "qdrant") {
             filter = {
                 must: [
                     {

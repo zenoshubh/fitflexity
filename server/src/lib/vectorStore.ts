@@ -6,7 +6,7 @@ import { PineconeStore } from "@langchain/pinecone";
 
 const initialiseVectorStore = async ({ collectionName }: { collectionName: string }) => {
     let vectorStore: any = null;
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.VECTOR_DB_TYPE === "qdrant") {
         vectorStore = await QdrantVectorStore.fromExistingCollection(embeddings, {
             url: process.env.QDRANT_URL,
             collectionName: collectionName,

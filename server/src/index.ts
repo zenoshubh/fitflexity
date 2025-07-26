@@ -24,11 +24,11 @@ import coachRouter from "./routes/coach.routes";
 import errorMiddleware from "./middlewares/error.middleware";
 
 // routes declaration
-app.use("/api/v1/users", userRouter);
-app.use("/api/v1/diet", dietRouter);
-app.use("/api/v1/workout", workoutRouter);
-app.use("/api/v1/weight-log", weightLogRouter);
-app.use("/api/v1/coach", coachRouter);
+app.use("/users", userRouter);
+app.use("/diet", dietRouter);
+app.use("/workout", workoutRouter);
+app.use("/weight-log", weightLogRouter);
+app.use("/coach", coachRouter);
 
 // Error handling middleware
 app.use(errorMiddleware);

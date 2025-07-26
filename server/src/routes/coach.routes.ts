@@ -4,7 +4,7 @@ import { Router } from "express";
 
 const router = Router()
 
-router.route("/chat").post(verifyJWT, chatCoach)
+router.route("/chat").post(chatCoach)
 
 
 export default router;

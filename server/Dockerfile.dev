@@ -1,0 +1,13 @@
+FROM oven/bun:latest
+
+WORKDIR /server
+
+COPY package.json bun.lock ./
+ 
+RUN bun install
+
+COPY . .
+
+RUN chmod +x start.sh
+
+CMD ["./start.sh"]

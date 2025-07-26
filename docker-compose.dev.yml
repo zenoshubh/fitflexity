@@ -1,0 +1,121 @@
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./client/.env
+    volumes:
+      - /client/node_modules
+      - /client/.next
+
+    command: bun run dev
+    networks:
+      - fitflexity
+    depends_on:
+      - server
+    ports:
+      - "3000:3000"
+    # Docker watch configuration for live reloading (Docker Desktop specific)
+    develop:
+      watch:
+        - action: sync
+          path: ./client/src
+          target: /client/src
+        - action: rebuild
+          path: ./client/package.json
+          target: /client/package.json
+        - action: rebuild
+          path: ./client/bun.lockb
+          target: /client/bun.lockb
+        - action: rebuild
+          path: ./client/Dockerfile
+          target: /client/Dockerfile
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - /server/node_modules
+    networks:
+      - fitflexity
+    depends_on:
+      - postgres
+      - valkey
+      - qdrant
+    ports:
+      - "8000:8000"
+    # Docker watch configuration for live reloading (Docker Desktop specific)
+    develop:
+      watch:
+        - action: sync
+          path: ./server/src
+          target: /server/src
+        - action: rebuild
+          path: ./server/package.json
+          target: /server/package.json
+        - action: rebuild
+          path: ./server/bun.lockb
+          target: /server/bun.lockb
+        - action: rebuild
+          path: ./server/Dockerfile
+          target: /server/Dockerfile
+
+  postgres:
+    container_name: fitflexity-db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fitflexity
+    environment:
+      POSTGRES_USER: shubh
+      POSTGRES_DB: fitflexity-db
+      POSTGRES_PASSWORD: shubh
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - fitflexity
+    depends_on:
+      - postgres
+
+  valkey:
+    image: valkey/valkey:latest
+    container_name: fitflexity-valkey
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - fitflexity
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: fitflexity-qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - fitflexity
+
+networks:
+  fitflexity:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  valkey_data:
+  qdrant_data:

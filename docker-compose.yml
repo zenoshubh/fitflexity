@@ -1,0 +1,88 @@
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile # Should be your production Dockerfile
+    container_name: fitflexity-client
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: ./client/.env
+    networks:
+      - fitflexity
+    depends_on:
+      - server
+
+  # SERVER (BUN BACKEND)
+  # Exposes its port directly.
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile # Should be your production Dockerfile
+    container_name: fitflexity-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file: ./server/.env
+    networks:
+      - fitflexity
+    depends_on:
+      - postgres
+      - valkey
+      - qdrant
+
+  postgres:
+    container_name: fitflexity-db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fitflexity
+    environment:
+      POSTGRES_USER: shubh
+      POSTGRES_DB: fitflexity-db
+      POSTGRES_PASSWORD: shubh
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - fitflexity
+    depends_on:
+      - postgres
+
+  valkey:
+    image: valkey/valkey:latest
+    container_name: fitflexity-valkey
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - fitflexity
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: fitflexity-qdrant
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - fitflexity
+
+networks:
+  fitflexity:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  valkey_data:
+  qdrant_data:

@@ -1,0 +1,29 @@
+# Dependency directories - these are installed inside the container
+node_modules/
+bun_modules/ # Bun might create its own module folder
+
+# Next.js specific build output and cache directories
+.next/        # Next.js build output (e.g., compiled JavaScript, pages)
+out/          # If you're using 'next export' for static HTML
+
+# Version control and environment files
+.git/
+.gitignore
+.env          # Environment variables (sensitive info, shouldn't be in image)
+.env.*
+
+# Log files and temporary files
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# IDE and Editor specific files
+.vscode/      # VS Code specific settings
+.idea/        # IntelliJ/WebStorm specific settings
+*.sublime-project
+*.sublime-workspace
+.DS_Store     # macOS specific desktop services store
+
+# Any other temporary or generated files you don't need in the image
+tmp/
+temp/

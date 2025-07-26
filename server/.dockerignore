@@ -1,0 +1,35 @@
+# Dependency directories - these are installed inside the container
+node_modules/
+bun_modules/ # If Bun creates its own specific module folder
+
+# Compiled/Build output directories (agar aap use karte ho)
+dist/
+build/
+out/
+
+# Version control
+.git/
+.gitignore
+
+# Environment variables files (should not be part of the image)
+.env
+.env.*
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+bun-debug.log*
+
+# IDE and Editor specific files
+.vscode/    # VS Code settings
+.idea/      # IntelliJ/WebStorm settings
+*.sublime-project
+*.sublime-workspace
+.DS_Store   # macOS specific
+
+# Temporary files or cache
+tmp/
+temp/
+*.swp       # Vim swap files
+*~          # Emacs backup files

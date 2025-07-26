@@ -32,16 +32,16 @@ const GraphAnnotation = Annotation.Root({
     }),
 });
 
-// const model = new ChatGoogleGenerativeAI({
-//     model: "gemini-2.0-flash",
-//     apiKey: process.env.GOOGLE_GENAI_API_KEY,
-// });
-
-const model = new ChatOllama({
-    model: "phi4-mini",
-    baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
-    temperature: 0,
+const model = new ChatGoogleGenerativeAI({
+    model: "gemini-2.0-flash",
+    apiKey: process.env.GOOGLE_GENAI_API_KEY,
 });
+
+// const model = new ChatOllama({
+//     model: "phi4-mini",
+//     baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
+//     temperature: 0,
+// });
 
 const dietPlanRetriever = tool(
     async ({ query }) => {

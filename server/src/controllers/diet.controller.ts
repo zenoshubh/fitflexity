@@ -8,7 +8,7 @@ import { diets, type NewDiet } from "@/db/schemas/diet.schema";
 import { PineconeStore } from "@langchain/pinecone";
 import { Document } from "@langchain/core/documents";
 import { generateDietPlanWithLLM } from "@/utils/agents/dietPlanGenerator";
-import { llm } from "@/lib/llm";
+import { llm } from "@/lib/LLMconfig";
 import { queue as embedDietPlanQueue } from "@/lib/bullmq";
 import { embeddings } from "@/lib/rag";
 import { AIMessageChunk } from "@langchain/core/messages";

@@ -1,4 +1,4 @@
-import { llm } from "@/lib/llm";
+import { llm } from "@/lib/LLMconfig";
 
 export const generateWorkoutPlanWithLLM = async ({
     gender,

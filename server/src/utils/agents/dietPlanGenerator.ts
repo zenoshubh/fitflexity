@@ -2,7 +2,7 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { MessagesAnnotation, StateGraph } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { llm } from "@/lib/llm";
+import { llm } from "@/lib/LLMconfig";
 
 const BMRcalculator =
     (weight: number, height: number, age: number, gender: string): number => {

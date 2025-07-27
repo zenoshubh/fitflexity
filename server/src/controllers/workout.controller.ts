@@ -7,7 +7,7 @@ import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { queue as embedWorkoutPlanQueue } from "@/lib/bullmq";
 import { eq } from "drizzle-orm";
-import { llm } from "@/lib/llm";
+import { llm } from "@/lib/LLMconfig";
 import { initialiseVectorStore } from "@/lib/vectorStore";
 import type { Document } from "@langchain/core/documents";
 

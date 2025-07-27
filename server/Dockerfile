@@ -35,6 +35,7 @@ RUN bun install --production --frozen-lockfile
 
 COPY --from=builder /server/src ./src
 COPY --from=builder /server/tsconfig.json ./
+COPY --from=builder /server/drizzle.config.ts ./
 COPY --from=builder /server/start.sh .
 
 # Expose the port your application runs on (replace 3000 if needed)

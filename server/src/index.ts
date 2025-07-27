@@ -35,6 +35,10 @@ app.use(errorMiddleware);
 
 const PORT: number = parseInt(process.env.PORT || "8000", 10);
 
+app.get("/", (req, res) => {
+    res.send("Welcome to FitFlexity API!");
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Server is running at port ${PORT}`);
 });

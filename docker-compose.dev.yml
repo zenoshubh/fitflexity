@@ -2,7 +2,7 @@ services:
   client:
     build:
       context: ./client
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     env_file: ./client/.env
     volumes:
@@ -35,7 +35,7 @@ services:
   server:
     build:
       context: ./server
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     restart: unless-stopped
     env_file: ./server/.env
     volumes:
@@ -63,6 +63,32 @@ services:
         - action: rebuild
           path: ./server/Dockerfile
           target: /server/Dockerfile
+
+  migrator:
+    build:
+      context: ./server # Backend ke Dockerfile ko use karega
+      dockerfile: Dockerfile.dev
+    environment:
+      - DATABASE_URL=postgres://shubh:shubh@postgres:5432/fitflexity-db
+    depends_on:
+      - postgres
+    command: bun run db:push # Tumhara migration command
+    networks:
+      - fitflexity
+    restart: "no"
+
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev # Should be your production Dockerfile
+    container_name: fitflexity-worker
+    restart: unless-stopped
+    command: bun worker
+    env_file: ./server/.env
+    networks:
+      - fitflexity
+    depends_on:
+      - server
 
   postgres:
     container_name: fitflexity-db

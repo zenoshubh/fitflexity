@@ -35,6 +35,7 @@ services:
     build:
       context: ./server # Backend ke Dockerfile ko use karega
       dockerfile: Dockerfile
+      target: builder
     depends_on:
       - postgres
     command: bun run db:push # Tumhara migration command

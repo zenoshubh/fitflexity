@@ -31,6 +31,30 @@ services:
       - valkey
       - qdrant
 
+  migrator:
+    build:
+      context: ./backend # Backend ke Dockerfile ko use karega
+      dockerfile: Dockerfile
+    depends_on:
+      - postgres
+    command: bun run db:push # Tumhara migration command
+    networks:
+      - fitflexity
+    restart: "no"
+
+  worker:
+    build:
+      context: ./server
+      dockerfile: Dockerfile # Should be your production Dockerfile
+    container_name: fitflexity-worker
+    restart: unless-stopped
+    command: bun worker
+    env_file: ./server/.env
+    networks:
+      - fitflexity
+    depends_on:
+      - server
+
   postgres:
     container_name: fitflexity-db
     image: postgres:15

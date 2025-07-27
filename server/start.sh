@@ -1,1 +1,1 @@
-bun dev & bun worker & wait
+bun dev

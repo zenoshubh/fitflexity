@@ -41,4 +41,4 @@ COPY --from=builder /server/start.sh .
 EXPOSE 8000
 
 # Set the command to run your application
-CMD ["./start.sh"]
+CMD ["bun", "dev"]

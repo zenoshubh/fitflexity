@@ -36,6 +36,8 @@ services:
       context: ./server # Backend ke Dockerfile ko use karega
       dockerfile: Dockerfile
       target: builder
+    environment:
+      - DATABASE_URL=postgres://shubh:shubh@postgres:5432/fitflexity-db  
     depends_on:
       - postgres
     command: bun run db:push # Tumhara migration command

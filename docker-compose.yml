@@ -33,7 +33,7 @@ services:
 
   migrator:
     build:
-      context: ./backend # Backend ke Dockerfile ko use karega
+      context: ./server # Backend ke Dockerfile ko use karega
       dockerfile: Dockerfile
     depends_on:
       - postgres

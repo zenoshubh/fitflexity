@@ -7,7 +7,7 @@
     "dev": "bun --watch src/index.ts",
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
     "worker": "bun src/workers/embedPlan.worker.ts",
-    "db:push": "bunx drizzle-kit push"
+    "db:push": "bunx drizzle-kit push --config=drizzle.config.ts"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",

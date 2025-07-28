@@ -3,11 +3,12 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile # Should be your production Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: fitflexity-client
     restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file: ./.env.client
     networks:
       - fitflexity
     depends_on:
@@ -23,7 +24,7 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    env_file: ./.env.server
+    env_file: .env.server
     networks:
       - fitflexity
     depends_on:

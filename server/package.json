@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "bun --watch src/index.ts",
+    "start": "bun dist/index.js",
     "build": "bun build ./src/index.ts --outdir ./dist --target bun",
     "worker": "bun src/workers/embedPlan.worker.ts",
     "db:push": "bunx drizzle-kit push --config=drizzle.config.ts"

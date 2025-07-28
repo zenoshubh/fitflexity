@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { llm } from "@/lib/LLMconfig";
 import { initialiseVectorStore } from "@/lib/vectorStore";
 import type { Document } from "@langchain/core/documents";
+import { embedPlan } from "@/utils/embedPlan";
 
 
 const generateWorkoutPlan = asyncHandler(async (req, res) => {
@@ -87,12 +88,18 @@ const generateWorkoutPlan = asyncHandler(async (req, res) => {
 
         // --- Offload vector DB indexing to background ---
 
-        await embedWorkoutPlanQueue.add("embed-plan", {
+        await embedPlan({
             planJson,
             userId: user.id,
-            goal: goal,
             planType: "workout",
-        });
+        }); 
+
+        // await embedWorkoutPlanQueue.add("embed-plan", {
+        //     planJson,
+        //     userId: user.id,
+        //     goal: goal,
+        //     planType: "workout",
+        // });
 
         // Return here so no further code runs in this handler
         return;

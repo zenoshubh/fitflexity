@@ -13,6 +13,7 @@ import { queue as embedDietPlanQueue } from "@/lib/bullmq";
 import { embeddings } from "@/lib/rag";
 import { AIMessageChunk } from "@langchain/core/messages";
 import { initialiseVectorStore } from "@/lib/vectorStore";
+import { embedPlan } from "@/utils/embedPlan";
 
 const generateDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -47,7 +48,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
     const { dietType, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = req.body;
 
-    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined ) {
+    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined) {
         throw new ApiError(400, "All fields are required");
     }
 
@@ -107,12 +108,17 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
         // --- Offload vector DB indexing to background ---
 
-        await embedDietPlanQueue.add("embed-diet-plan", {
+        await embedPlan({
             planJson,
             userId: user.id,
-            goal: goal,
             planType: "diet",
         });
+        // await embedDietPlanQueue.add("embed-diet-plan", {
+        //     planJson,
+        //     userId: user.id,
+        //     goal: goal,
+        //     planType: "diet",
+        // });
 
 
 

@@ -1,8 +1,5 @@
 import "dotenv/config";
 import { Worker } from "bullmq";
-import { embeddings } from "@/lib/rag";
-import { PineconeStore } from "@langchain/pinecone";
-import { QdrantVectorStore } from "@langchain/qdrant";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { initialiseVectorStore } from "@/lib/vectorStore";

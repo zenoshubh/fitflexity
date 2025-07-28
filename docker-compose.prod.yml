@@ -1,6 +1,5 @@
 services:
   client:
-    image: zenoshubh/fitflexity-client:latest
     build:
       context: ./client
       dockerfile: Dockerfile # Should be your production Dockerfile
@@ -17,7 +16,6 @@ services:
   # SERVER (BUN BACKEND)
   # Exposes its port directly.
   server:
-    image: zenoshubh/fitflexity-server:latest
     build:
       context: ./server
       dockerfile: Dockerfile # Should be your production Dockerfile
@@ -34,7 +32,6 @@ services:
       - qdrant
 
   migrator:
-    image: zenoshubh/fitflexity-migrator:latest
     build:
       context: ./server # Backend ke Dockerfile ko use karega
       dockerfile: Dockerfile

@@ -1,0 +1,49 @@
+# .github/workflows/deploy.yml
+
+name: Build, Push, and Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build_and_push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      - run: docker compose build
+      - run: docker compose push
+
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    steps:
+      - name: Deploy to Droplet
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_SSH_HOST }}
+          username: ${{ secrets.VPS_SSH_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /home/shubh/fitflexity
+            git pull
+            docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }}
+            docker compose pull
+            
+            # Pehle migration chalaayein
+            docker compose up -d migrator
+            
+            # Migration container ke poora hone ka intezaar karein
+            docker wait $(docker compose ps -q migrator)
+            
+            # Baaki services ko start/update karein
+            docker compose up -d --force-recreate --no-build server client postgres valkey qdrant adminer
+            
+            # Unused Docker images ko clean karein
+            docker image prune -f

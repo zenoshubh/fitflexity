@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file: ./client/.env
+    env_file: ./.env.client
     networks:
       - fitflexity
     depends_on:
@@ -23,7 +23,7 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    env_file: ./server/.env
+    env_file: ./.env.server
     networks:
       - fitflexity
     depends_on:
@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile
       target: builder
     environment:
-      - DATABASE_URL=postgres://shubh:shubh@postgres:5432/fitflexity-db  
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       - postgres
     command: bun run db:push # Tumhara migration command
@@ -45,22 +45,22 @@ services:
       - fitflexity
     restart: "no"
 
-  worker:
-    build:
-      context: ./server
-      dockerfile: Dockerfile # Should be your production Dockerfile
-    container_name: fitflexity-worker
-    restart: unless-stopped
-    command: bun worker
-    env_file: ./server/.env
-    networks:
-      - fitflexity
-    depends_on:
-      - server
+  # worker:
+  #   build:
+  #     context: ./server
+  #     dockerfile: Dockerfile # Should be your production Dockerfile
+  #   container_name: fitflexity-worker
+  #   restart: unless-stopped
+  #   command: bun worker
+  #   env_file: ./.env.server
+  #   networks:
+  #     - fitflexity
+  #   depends_on:
+  #     - server
 
   postgres:
     container_name: fitflexity-db
-    image: postgres:15
+    image: postgres:17.5-alpine3.22
     restart: always
     ports:
       - "5432:5432"
@@ -69,9 +69,9 @@ services:
     networks:
       - fitflexity
     environment:
-      POSTGRES_USER: shubh
-      POSTGRES_DB: fitflexity-db
-      POSTGRES_PASSWORD: shubh
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   adminer:
     image: adminer
@@ -84,7 +84,7 @@ services:
       - postgres
 
   valkey:
-    image: valkey/valkey:latest
+    image: valkey/valkey:8.1.3-alpine3.22
     container_name: fitflexity-valkey
     restart: always
     ports:

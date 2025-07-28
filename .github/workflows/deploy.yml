@@ -18,7 +18,6 @@ jobs:
       - name: Create environment files from secrets
         run: |
           echo "${{ secrets.DOT_ENV_MAIN }}" > .env
-          echo "${{ secrets.DOT_ENV_CLIENT }}" > .env.client
           echo "${{ secrets.DOT_ENV_SERVER }}" > .env.server
 
       - name: Log in to Docker Hub

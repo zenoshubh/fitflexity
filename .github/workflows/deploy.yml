@@ -46,6 +46,8 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /home/shubh/fitflexity
+            echo "${{ secrets.DOT_ENV_SERVER }}" > .env.server
+            echo "${{ secrets.DOT_ENV_MAIN }}" > .env
 
             git pull
 

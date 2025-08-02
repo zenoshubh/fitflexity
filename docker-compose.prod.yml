@@ -35,8 +35,7 @@ services:
   migrator:
     build:
       context: ./server 
-      dockerfile: Dockerfile
-      target: migrator
+      dockerfile: Dockerfile.migrator
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:

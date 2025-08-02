@@ -30,8 +30,6 @@
     "@langchain/google-genai": "^0.2.14",
     "@langchain/langgraph": "^0.3.7",
     "@langchain/mistralai": "^0.2.1",
-    "@langchain/ollama": "^0.2.3",
-    "@langchain/pinecone": "^0.2.0",
     "@langchain/qdrant": "^0.1.2",
     "@langchain/textsplitters": "^0.1.0",
     "axios": "^1.10.0",

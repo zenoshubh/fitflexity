@@ -33,7 +33,7 @@ const GraphAnnotation = Annotation.Root({
 });
 
 const model = new ChatGoogleGenerativeAI({
-    model: "gemini-2.0-flash",
+    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
     apiKey: process.env.GOOGLE_GENAI_API_KEY,
 });
 

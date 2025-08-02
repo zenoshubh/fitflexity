@@ -118,7 +118,6 @@ const CreateWorkoutPlanPage = () => {
       if (status == 200) {
         setWorkoutPlan(data.plan);
         toast.success(`${message}`);
-        console.log(workoutPlan);
       } else {
         setWorkoutPlan(undefined);
         toast.error(`Failed to create workout plan: ${message}`);

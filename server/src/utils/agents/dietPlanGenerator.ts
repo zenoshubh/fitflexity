@@ -81,8 +81,6 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
         goalInfo,
     });
 
-    console.log(`BMR: ${bmr}, TDEE: ${tdee}, Daily Calorie Intake: ${dailyCalorieIntake}`);
-
     const PROMPT =
         `I need a detailed diet plan with the following details:
     - Goal: ${goal}
@@ -134,8 +132,5 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
     - Do NOT include any extra text, explanation, or markdown. Only output the JSON array as shown above.
     `;
     const result = await llm.invoke(PROMPT);
-
-    console.log(`Diet Plan Generated\n: ${result.content}`);
-
     return result.content;
 }

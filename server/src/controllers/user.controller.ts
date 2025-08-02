@@ -88,7 +88,6 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
     }
 
     try {
-        console.log("Starting Google OAuth flow with code:", code);
 
         // 1️⃣ Exchange code for token
         const tokenResponse = await axios.post<GoogleTokenResponse>(`https://oauth2.googleapis.com/token`, {
@@ -100,7 +99,6 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         });
 
         const { access_token } = tokenResponse.data;
-        console.log("Token exchange successful");
 
         // 2️⃣ Get user info using access_token
         const userInfo = await axios.get<GoogleUserInfo>(`https://www.googleapis.com/oauth2/v2/userinfo`, {
@@ -110,7 +108,6 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         });
 
         const user: GoogleUserInfo = userInfo.data;
-        console.log("User Info retrieved:", { id: user.id, email: user.email, name: user.name });
 
         // Check if user already exists
         const existingUser = await db
@@ -122,10 +119,8 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         let userData;
 
         if (existingUser.length > 0) {
-            console.log("Existing user found");
             userData = existingUser[0]!; // Non-null assertion as we've checked length > 0
         } else {
-            console.log("Creating new user");
             // Create new user
             const newUser: NewUser = {
                 firstName: user.given_name || user.name?.split(' ')[0] || 'Unknown',
@@ -156,7 +151,6 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
             }
 
             userData = createdUser[0];
-            console.log("New user created successfully");
         }
 
         // Ensure userData exists
@@ -336,7 +330,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
         res.cookie('accessToken', accessToken, { ...cookieOptions, maxAge: process.env.ACCESS_TOKEN_EXPIRY ? parseInt(process.env.ACCESS_TOKEN_EXPIRY) * 1000 : 15 * 60 * 1000 }); // 15 minutes
         res.cookie('refreshToken', newRefreshToken, { ...cookieOptions, maxAge: process.env.REFRESH_TOKEN_EXPIRY ? parseInt(process.env.REFRESH_TOKEN_EXPIRY) * 1000 : 7 * 24 * 60 * 60 * 1000 }); // 7 days
-        console.log("Access token refreshed successfully");
 
         return res
             .status(200)

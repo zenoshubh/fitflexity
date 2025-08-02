@@ -24,7 +24,6 @@ export const embedPlan = async ({ planJson, userId, planType }: { planJson: any;
         });
 
         await vectorStore.addDocuments(splits);
-        console.log(`${planType} plan embedded in vector store for user: ${userId}`);
 
     } catch (err) {
         console.error("Embedding job failed:", err);

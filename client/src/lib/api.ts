@@ -10,7 +10,7 @@ const getCurrentPath = () => {
     return window.location.pathname;
 };
 const api: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/",
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
     withCredentials: true,
 });
 

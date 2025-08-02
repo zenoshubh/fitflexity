@@ -4,11 +4,10 @@ services:
       context: ./client
       dockerfile: Dockerfile.dev
     restart: unless-stopped
-    env_file: ./client/.env
+    env_file: .env.client
     volumes:
       - /client/node_modules
       - /client/.next
-
     command: bun run dev
     networks:
       - fitflexity
@@ -26,18 +25,18 @@ services:
           path: ./client/package.json
           target: /client/package.json
         - action: rebuild
-          path: ./client/bun.lockb
-          target: /client/bun.lockb
+          path: ./client/bun.lock
+          target: /client/bun.lock
         - action: rebuild
-          path: ./client/Dockerfile
-          target: /client/Dockerfile
+          path: ./client/Dockerfile.dev
+          target: /client/Dockerfile.dev
 
   server:
     build:
       context: ./server
       dockerfile: Dockerfile.dev
     restart: unless-stopped
-    env_file: ./server/.env
+    env_file: .env.server
     volumes:
       - /server/node_modules
     networks:
@@ -61,34 +60,50 @@ services:
           path: ./server/bun.lockb
           target: /server/bun.lockb
         - action: rebuild
-          path: ./server/Dockerfile
-          target: /server/Dockerfile
+          path: ./server/Dockerfile.dev
+          target: /server/Dockerfile.dev
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    container_name: fitflexity-worker
+    volumes:
+      - /worker/node_modules
+    restart: unless-stopped
+    env_file: .env.worker
+    networks:
+      - fitflexity
+    depends_on:
+      - server
+      - qdrant
+    develop:
+      watch:
+        - action: sync
+          path: ./worker/src
+          target: /worker/src
+        - action: rebuild
+          path: ./worker/package.json
+          target: /worker/package.json
+        - action: rebuild
+          path: ./worker/bun.lock
+          target: /worker/bun.lock
+        - action: rebuild
+          path: ./worker/Dockerfile.dev
+          target: /worker/Dockerfile.dev
 
   migrator:
     build:
       context: ./server # Backend ke Dockerfile ko use karega
       dockerfile: Dockerfile.dev
     environment:
-      - DATABASE_URL=postgres://shubh:shubh@postgres:5432/fitflexity-db
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       - postgres
     command: bun run db:push # Tumhara migration command
     networks:
       - fitflexity
     restart: "no"
-
-  worker:
-    build:
-      context: ./server
-      dockerfile: Dockerfile.dev # Should be your production Dockerfile
-    container_name: fitflexity-worker
-    restart: unless-stopped
-    command: bun worker
-    env_file: ./server/.env
-    networks:
-      - fitflexity
-    depends_on:
-      - server
 
   postgres:
     container_name: fitflexity-db
@@ -101,9 +116,9 @@ services:
     networks:
       - fitflexity
     environment:
-      POSTGRES_USER: shubh
-      POSTGRES_DB: fitflexity-db
-      POSTGRES_PASSWORD: shubh
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
   adminer:
     image: adminer

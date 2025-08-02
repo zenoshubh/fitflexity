@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import withAuth from "@/components/withAuth";
 import api from "@/lib/api";
-import { Send, Edit3 } from "lucide-react";
+import { Send, Edit3, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ const ViewDietPlanPage = () => {
   const [chatResponse, setChatResponse] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [answer, setAnswer] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Track selected option index for each meal
   const [selectedOptions, setSelectedOptions] = useState<{
@@ -123,6 +124,22 @@ const ViewDietPlanPage = () => {
     }
   };
 
+  const handleDeleteDietPlan = async () => {
+    if (!dietPlan || !Array.isArray(dietPlan) || dietPlan.length === 0) return;
+    setDeleting(true);
+    try {
+      await api.delete("/diet/delete-diet-plan");
+      setDietPlan([]);
+      toast.success("Diet plan deleted successfully.");
+      setSelectedMealIdx(null);
+      form.reset();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to delete diet plan");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // --- UI ---
   return (
     <div
@@ -150,26 +167,47 @@ const ViewDietPlanPage = () => {
                 <h2 className="text-2xl sm:text-3xl font-extrabold text-orange-700 text-center tracking-tight">
                   Your Diet Plan
                 </h2>
-                {/* Edit Mode Toggle */}
-                <button
-                  className={`flex items-center gap-2 text-sm font-medium text-orange-700 px-3 py-1 rounded-full transition
-                    ${editMode ? "bg-orange-100 shadow" : "hover:bg-orange-50"}
-                  `}
-                  onClick={() => {
-                    setEditMode((v) => !v);
-                    setSelectedMealIdx(null);
-                    form.reset();
-                  }}
-                  type="button"
-                >
-                  <Edit3
-                    className={`transition ${
-                      editMode ? "text-orange-500" : "text-orange-300"
-                    }`}
-                    size={20}
-                  />
-                  <span className="hidden md:inline">Edit Diet Plan</span>
-                </button>
+                <div className="flex gap-2">
+                  {/* Edit Mode Toggle */}
+                  <button
+                    className={`flex items-center gap-2 text-sm font-medium text-orange-700 px-3 py-1 rounded-full transition
+                      ${editMode ? "bg-orange-100 shadow" : "hover:bg-orange-50"}
+                    `}
+                    onClick={() => {
+                      setEditMode((v) => !v);
+                      setSelectedMealIdx(null);
+                      form.reset();
+                    }}
+                    type="button"
+                  >
+                    <Edit3
+                      className={`transition ${
+                        editMode ? "text-orange-500" : "text-orange-300"
+                      }`}
+                      size={20}
+                    />
+                    <span className="hidden md:inline">Edit Diet Plan</span>
+                  </button>
+                  {/* Delete Diet Plan Button */}
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 text-sm font-medium text-orange-700 px-3 py-1 rounded-full transition
+                      bg-orange-50 hover:bg-orange-100 border border-orange-200 shadow-sm
+                      ${deleting ? "opacity-60 cursor-not-allowed" : ""}
+                    `}
+                    onClick={handleDeleteDietPlan}
+                    disabled={deleting || !dietPlan || dietPlan.length === 0}
+                    aria-label="Delete Diet Plan"
+                  >
+                    <Trash2
+                      size={18}
+                      className="text-orange-400"
+                    />
+                    <span className="hidden md:inline">
+                      {deleting ? "Deleting..." : "Delete Diet Plan"}
+                    </span>
+                  </button>
+                </div>
               </div>
               {/* Only render Accordion if there are meals */}
               <div className="flex-1 min-h-0 overflow-y-auto pr-0 md:pr-2">

@@ -1,0 +1,11 @@
+FROM oven/bun:1.2.19
+
+WORKDIR /worker
+
+COPY package.json bun.lock ./
+ 
+RUN bun install
+
+COPY . .
+
+CMD ["bun", "dev"]

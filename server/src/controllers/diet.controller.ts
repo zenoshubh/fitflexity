@@ -5,15 +5,11 @@ import { asyncHandler } from "@/utils/asyncHandler";
 import { eq } from "drizzle-orm";
 import { users, type User } from "@/db/schemas/user.schema";
 import { diets, type NewDiet } from "@/db/schemas/diet.schema";
-import { PineconeStore } from "@langchain/pinecone";
 import { Document } from "@langchain/core/documents";
 import { generateDietPlanWithLLM } from "@/utils/agents/dietPlanGenerator";
 import { llm } from "@/lib/LLMconfig";
-import { queue as embedDietPlanQueue } from "@/lib/bullmq";
-import { embeddings } from "@/lib/rag";
-import { AIMessageChunk } from "@langchain/core/messages";
+import { managePlanEmbeddingsQueue } from "@/lib/bullmq";
 import { initialiseVectorStore } from "@/lib/vectorStore";
-import { embedPlan } from "@/utils/embedPlan";
 
 const generateDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -106,24 +102,13 @@ const generateDietPlan = asyncHandler(async (req, res) => {
             new ApiResponse(200, { plan: planJson }, "Diet plan generated and saved successfully")
         );
 
-        // --- Offload vector DB indexing to background ---
-
-        await embedPlan({
+        await managePlanEmbeddingsQueue.add("embed-diet-plan", {
             planJson,
             userId: user.id,
+            goal: goal,
             planType: "diet",
         });
-        // await embedDietPlanQueue.add("embed-diet-plan", {
-        //     planJson,
-        //     userId: user.id,
-        //     goal: goal,
-        //     planType: "diet",
-        // });
 
-
-
-
-        // Return here so no further code runs in this handler
         return;
 
     } catch (error) {
@@ -271,9 +256,6 @@ const chatDietPlan = asyncHandler(async (req, res) => {
 
     const { question } = req.body;
 
-    console.log(`User ${user.id} asked: ${question}`);
-
-
     if (!question) {
         throw new ApiError(400, "Question is required");
     }
@@ -282,24 +264,19 @@ const chatDietPlan = asyncHandler(async (req, res) => {
         collectionName: "diet-plans"
     });
 
+    let filter: any = {};
     // 4. Prepare filter
-    let filter: any = undefined;
     if (user && user.id) {
-        // Qdrant expects filter as { must: [{ key: "...", match: { value: ... } }] }
-        if (process.env.VECTOR_DB_TYPE === "qdrant") {
-            filter = {
-                must: [
-                    {
-                        key: "metadata.userId",
-                        match: { value: user.id }
-                    }
-                ]
-            };
-        } else {
-            // Pinecone expects a plain object
-            filter = { userId: user.id };
-        }
+        filter = {
+            must: [
+                {
+                    key: "metadata.userId",
+                    match: { value: user.id }
+                }
+            ]
+        };
     }
+
 
     // 5. Similarity search
     let results;
@@ -310,7 +287,6 @@ const chatDietPlan = asyncHandler(async (req, res) => {
             filter
         );
         results = similaritySearchResults.map((doc: Document) => doc.pageContent);
-        console.log(`Found ${results.length} relevant diet plan entries for question: ${question}`);
     } catch (error) {
         console.error("Error querying diet plan:", error);
         // Qdrant 400 error: return empty result instead of throwing
@@ -366,9 +342,14 @@ const deleteDietPlan = asyncHandler(async (req, res) => {
 
     await db.delete(diets).where(eq(diets.userId, userId));
 
-    return res.status(200).json(
+    res.status(200).json(
         new ApiResponse(200, {}, "Diet plan deleted successfully")
     );
+
+    await managePlanEmbeddingsQueue.add("delete-diet-plan", {
+        userId: user.id,
+        planType: "diet",
+    });
 })
 
 export { generateDietPlan, fetchDietPlan, updateDietPlan, chatDietPlan, deleteDietPlan };

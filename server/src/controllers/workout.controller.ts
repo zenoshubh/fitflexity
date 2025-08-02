@@ -5,7 +5,7 @@ import { generateWorkoutPlanWithLLM } from "@/utils/agents/workoutPlanGenerator"
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
 import { asyncHandler } from "@/utils/asyncHandler";
-import { queue as embedWorkoutPlanQueue } from "@/lib/bullmq";
+import { managePlanEmbeddingsQueue } from "@/lib/bullmq";
 import { eq } from "drizzle-orm";
 import { llm } from "@/lib/LLMconfig";
 import { initialiseVectorStore } from "@/lib/vectorStore";
@@ -86,22 +86,13 @@ const generateWorkoutPlan = asyncHandler(async (req, res) => {
             new ApiResponse(200, { plan: planJson }, "Workout plan generated and saved successfully")
         );
 
-        // --- Offload vector DB indexing to background ---
-
-        await embedPlan({
+        await managePlanEmbeddingsQueue.add("embed-workout-plan", {
             planJson,
             userId: user.id,
+            goal: goal,
             planType: "workout",
-        }); 
+        });
 
-        // await embedWorkoutPlanQueue.add("embed-plan", {
-        //     planJson,
-        //     userId: user.id,
-        //     goal: goal,
-        //     planType: "workout",
-        // });
-
-        // Return here so no further code runs in this handler
         return;
 
     } catch (error) {
@@ -225,7 +216,6 @@ const chatWorkoutPlan = asyncHandler(async (req, res) => {
 
     const { question } = req.body;
 
-    console.log(`User ${user.id} asked: ${question}`);
 
 
     if (!question) {
@@ -237,23 +227,19 @@ const chatWorkoutPlan = asyncHandler(async (req, res) => {
     });
 
     // 4. Prepare filter
-    let filter: any = undefined;
+    let filter: any = {};
     if (user && user.id) {
         // Qdrant expects filter as { must: [{ key: "...", match: { value: ... } }] }
-        if (process.env.VECTOR_DB_TYPE === "qdrant") {
-            filter = {
-                must: [
-                    {
-                        key: "metadata.userId",
-                        match: { value: user.id }
-                    }
-                ]
-            };
-        } else {
-            // Pinecone expects a plain object
-            filter = { userId: user.id };
-        }
+        filter = {
+            must: [
+                {
+                    key: "metadata.userId",
+                    match: { value: user.id }
+                }
+            ]
+        };
     }
+
 
     // 5. Similarity search
     let results;
@@ -264,7 +250,6 @@ const chatWorkoutPlan = asyncHandler(async (req, res) => {
             filter
         );
         results = similaritySearchResults.map((doc: Document) => doc.pageContent);
-        console.log(`Found ${results.length} relevant workout plan entries for question: ${question}`);
     } catch (error) {
         console.error("Error querying workout plan:", error);
         // Qdrant 400 error: return empty result instead of throwing
@@ -320,9 +305,14 @@ const deleteWorkoutPlan = asyncHandler(async (req, res) => {
 
     await db.delete(workouts).where(eq(workouts.userId, userId));
 
-    return res.status(200).json(
+    res.status(200).json(
         new ApiResponse(200, {}, "Workout plan deleted successfully")
     );
+
+    await managePlanEmbeddingsQueue.add("delete-workout-plan", {
+        userId: user.id,
+        planType: "workout",
+    });
 })
 
 export { generateWorkoutPlan, fetchWorkoutPlan, updateWorkoutPlan, chatWorkoutPlan, deleteWorkoutPlan };

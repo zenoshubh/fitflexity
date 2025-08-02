@@ -20,7 +20,6 @@ jobs:
           echo "${{ secrets.DOT_ENV_MAIN }}" > .env
           echo "${{ secrets.DOT_ENV_SERVER }}" > .env.server
           echo "${{ secrets.DOT_ENV_WORKER }}" > .env.worker
-          echo "${{ secrets.DOT_ENV_CLIENT }}" > .env.client
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -51,7 +50,6 @@ jobs:
             echo "${{ secrets.DOT_ENV_SERVER }}" > .env.server
             echo "${{ secrets.DOT_ENV_MAIN }}" > .env
             echo "${{ secrets.DOT_ENV_WORKER }}" > .env.worker
-            echo "${{ secrets.DOT_ENV_CLIENT }}" > .env.client
 
             git pull
 

@@ -34,30 +34,26 @@ services:
 
   migrator:
     build:
-      context: ./server # Backend ke Dockerfile ko use karega
+      context: ./server 
       dockerfile: Dockerfile
-      target: builder
+      target: migrator
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       - postgres
-    command: bun run db:push # Tumhara migration command
     networks:
       - fitflexity
     restart: "no"
 
-  # worker:
-  #   build:
-  #     context: ./server
-  #     dockerfile: Dockerfile # Should be your production Dockerfile
-  #   container_name: fitflexity-worker
-  #   restart: unless-stopped
-  #   command: bun worker
-  #   env_file: ./.env.server
-  #   networks:
-  #     - fitflexity
-  #   depends_on:
-  #     - server
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile # Should be your production Dockerfile
+    container_name: fitflexity-worker
+    restart: unless-stopped
+    env_file: ./.env.worker
+    networks:
+      - fitflexity
 
   postgres:
     container_name: fitflexity-db

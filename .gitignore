@@ -1,2 +1,5 @@
 .env
 .env.server
+.env.worker
+.env.client
+prod_envs

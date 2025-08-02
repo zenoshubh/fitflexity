@@ -1,3 +1,17 @@
+# Migrator Stage
+FROM oven/bun:1.2.19 AS migrator
+
+WORKDIR /server
+
+COPY migrator.package.json ./package.json
+
+RUN bun install
+
+COPY /src/db/schemas ./src/db/schemas
+COPY drizzle.config.ts ./
+
+CMD ["bunx", "drizzle-kit", "push", "--config=drizzle.config.ts"]
+
 # ---- 1. Build Stage ----
 FROM oven/bun:1.2.19 AS builder
 

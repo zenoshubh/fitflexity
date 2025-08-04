@@ -5,15 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import Markdown from "react-markdown";
 
-const COACH_COLOR = "#f97316"; // orange-500
-const COACH_BG = "#fff7ed"; // orange-50
-const USER_BG = "#f3f4f6"; // gray-100
 
 type Message = {
   type: string;
   content: string;
   role: "user" | "coach";
 };
+
+function getSessionId() {
+  // Remove previous sessionId on every reload
+  sessionStorage.removeItem("sessionId");
+  const sessionId = crypto.randomUUID();
+  sessionStorage.setItem("sessionId", sessionId);
+  return sessionId;
+}
+
+const sessionId = getSessionId();
 
 const CoachChatPage = () => {
   const [input, setInput] = useState("");
@@ -39,14 +46,16 @@ const CoachChatPage = () => {
     };
     setMessages((prev) => [...prev, userMsg]);
     try {
-      const response = await api.post("/coach/chat", { message: input });
+      const response = await api.post("/coach/chat", {
+        message: input,
+        sessionId: sessionId, // Pass sessionId in request body
+      });
       const { data } = response.data;
-      const coachMsgs: Message[] =
-        (data.responses || []).map((msg: any) => ({
-          ...msg,
-          role: "coach",
-        })) || [];
-      setMessages((prev) => [...prev, ...coachMsgs]);
+      // Update: Expect a single response object, not array
+      const coachMsg: Message | null = data.response
+        ? { ...data.response, role: "coach" }
+        : null;
+      if (coachMsg) setMessages((prev) => [...prev, coachMsg]);
       setSummary(data.summary || null);
       setInput("");
     } catch (err: any) {

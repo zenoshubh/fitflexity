@@ -89,7 +89,7 @@ const ViewWorkoutPlanPage = () => {
       try {
         const selectedSession = workoutPlan[selectedSessionIdx];
         // Call API with the selected session as 'workout'
-        const res = await api.put("/workout/update-workout-plan", {
+        const res = await api.put("/workout/edit-workout-plan", {
           workout: selectedSession,
           updateInstruction: values.chatQuery,
         });

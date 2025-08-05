@@ -10,7 +10,6 @@ import { eq } from "drizzle-orm";
 import { llm } from "@/lib/LLMconfig";
 import { initialiseVectorStore } from "@/lib/vectorStore";
 import type { Document } from "@langchain/core/documents";
-import { embedPlan } from "@/utils/embedPlan";
 
 
 const generateWorkoutPlan = asyncHandler(async (req, res) => {
@@ -124,7 +123,7 @@ const fetchWorkoutPlan = asyncHandler(async (req, res) => {
     );
 })
 
-const updateWorkoutPlan = asyncHandler(async (req, res) => {
+const editWorkoutPlan = asyncHandler(async (req, res) => {
     const user = req.user;
     if (!user) {
         throw new ApiError(401, "User not authenticated");
@@ -315,4 +314,4 @@ const deleteWorkoutPlan = asyncHandler(async (req, res) => {
     });
 })
 
-export { generateWorkoutPlan, fetchWorkoutPlan, updateWorkoutPlan, chatWorkoutPlan, deleteWorkoutPlan };
+export { generateWorkoutPlan, fetchWorkoutPlan, editWorkoutPlan, chatWorkoutPlan, deleteWorkoutPlan };

@@ -3,7 +3,7 @@ import { llm } from "@/lib/LLMconfig";
 export const generateWorkoutPlanWithLLM = async ({
     gender,
     heightInCms,
-    weightInKgs,
+    currentWeightInKgs,
     activityLevel,
     dateOfBirth,
     workoutType,
@@ -21,7 +21,7 @@ export const generateWorkoutPlanWithLLM = async ({
 
     - Gender: ${gender}
     - Height (cm): ${heightInCms}
-    - Weight (kg): ${weightInKgs}
+    - Weight (kg): ${currentWeightInKgs}
     - Activity Level: ${activityLevel}
     - Age: ${age}
     - Workout Type: ${workoutType}

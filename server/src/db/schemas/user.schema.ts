@@ -36,6 +36,7 @@ export const users = pgTable('users', {
     bodyFatPercentage: userBodyFatEnum('body_fat_percentage'),
     activityLevel: userActivityLevelEnum('activity_level'),
     goal: goalEnum('goal'),
+    updateRequired : boolean('update_required').default(false).notNull(),
     isProfileComplete: boolean('is_profile_complete').default(false).notNull(),
     googleId: varchar('google_id', { length: 100 }).notNull().unique(),
     refreshToken: varchar('refresh_token', { length: 500 }),

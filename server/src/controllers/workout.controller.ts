@@ -31,14 +31,14 @@ const generateWorkoutPlan = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required");
     }
 
-    const { gender, heightInCms, weightInKgs, activityLevel, goal, dateOfBirth } = user;
+    const { gender, heightInCms, currentWeightInKgs, activityLevel, goal, dateOfBirth } = user;
 
 
     let planJson: any;
     try {
         // Use the LangGraph agent instead of direct LLM call
         const workoutPlan = await generateWorkoutPlanWithLLM(
-            { gender, heightInCms, weightInKgs, activityLevel, dateOfBirth, workoutType, goal, numberOfDays, totalDurationMins, experience, notes }
+            { gender, heightInCms, currentWeightInKgs, activityLevel, dateOfBirth, workoutType, goal, numberOfDays, totalDurationMins, experience, notes }
         );
 
         if (!workoutPlan) {

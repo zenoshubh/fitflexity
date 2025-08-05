@@ -208,13 +208,13 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 });
 
 const completeProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, gender, weightInKgs, heightInCms, bodyFatPercentage, activityLevel, goal } = req.body;
+    const { dateOfBirth, gender, weightInKgs, targetWeightInKgs, heightInCms, bodyFatPercentage, activityLevel, goal } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel || !goal) {
+    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel || !goal || !targetWeightInKgs) {
         throw new ApiError(400, "All fields are required to complete the profile");
     }
 
@@ -224,7 +224,10 @@ const completeProfile = asyncHandler(async (req, res) => {
         .set({
             dateOfBirth,
             gender,
-            weightInKgs,
+            initialWeightInKgs: weightInKgs,
+            currentWeightInKgs: weightInKgs,
+            lastUpdatedWeightInKgs: weightInKgs,
+            targetWeightInKgs,
             heightInCms,
             bodyFatPercentage,
             activityLevel,
@@ -247,7 +250,7 @@ const completeProfile = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to update user profile");
     }
 
-    return res.status(200).json(new ApiResponse(200, updatedUser[0], "Profile completed successfully"));
+    return res.status(200).json(new ApiResponse(200, {}, "Profile completed successfully"));
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {

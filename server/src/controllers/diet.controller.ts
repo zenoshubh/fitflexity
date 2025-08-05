@@ -27,7 +27,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "super_active" | null;
     }[] =
         await db.select({
-            weightInKgs: users.weightInKgs,
+            weightInKgs: users.currentWeightInKgs,
             heightInCms: users.heightInCms,
             dateOfBirth: users.dateOfBirth,
             gender: users.gender,

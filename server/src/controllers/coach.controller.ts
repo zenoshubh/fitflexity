@@ -19,7 +19,7 @@ const chatCoach = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Unauthorized access");
   }
 
-  const userDetails = `First Name: ${user.firstName}, Age: ${user.dateOfBirth ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear() : "N/A"}, Gender: ${user.gender} , Weight: ${user.weightInKgs} kg, Height: ${user.heightInCms} cm, Goal: ${user.goal}, Activity Level: ${user.activityLevel}`;
+  const userDetails = `First Name: ${user.firstName}, Age: ${user.dateOfBirth ? new Date().getFullYear() - new Date(user.dateOfBirth).getFullYear() : "N/A"}, Gender: ${user.gender} , Weight: ${user.currentWeightInKgs} kg, Height: ${user.heightInCms} cm, Goal: ${user.goal}, Activity Level: ${user.activityLevel}`;
 
   const parsedData = chatRequestSchema.safeParse(req.body);
 

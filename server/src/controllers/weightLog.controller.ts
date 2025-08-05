@@ -1,4 +1,5 @@
 import db from "@/db";
+import { users } from "@/db/schemas/user.schema";
 import { weightLogs } from "@/db/schemas/weightLog.schema";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
@@ -18,6 +19,11 @@ const addWeightLog = asyncHandler(async (req, res) => {
   if (!user.id || !weightInKgs) {
     throw new ApiError(400, "All fields are required");
   }
+  
+  await db.update(users).set({
+    currentWeightInKgs: weightInKgs,
+    updatedAt: new Date(),
+  })
 
   // Log weight to the database
   const newWeightLog = await db.insert(weightLogs).values({

@@ -54,8 +54,8 @@ const goalMap: Record<string, { weeklyChange: number, type: "fat" | "muscle" }> 
 
 
 export async function generateDietPlanWithLLM(userDetails: any, dietPreferences: any) {
-    const { weightInKgs, heightInCms, dateOfBirth, bodyFatPercentage, activityLevel, gender } = userDetails;
-    const { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
+    const { weightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, bodyFatPercentage, activityLevel, gender } = userDetails;
+    const { dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
 
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : 30; // Default age of 30 if not provided
 
@@ -95,7 +95,7 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
     IMPORTANT POINTS TO BE FOLLOWED(STRICTLY):
     - The total daily calorie (${dailyCalorieIntake}) intake should be distributed across ${numberOfMeals} meals.
     - The total calorie should be strictly equal to the daily calorie intake value provided (${dailyCalorieIntake} plus minus 20).
-    - TOP PRIORITY: Protein should be around ${1.5 * desiredWeight} - ${2.0 * desiredWeight} grams. Include supplements if necessary.
+    - TOP PRIORITY: Protein should be around ${1.5 * targetWeightInKgs} - ${2.0 * targetWeightInKgs} grams. Include supplements if necessary.
     - Keep the diet plan healthy and balanced, considering the user's preferences, dietary restrictions, micro and macronutrient needs, and overall health.
 
     FORMAT:
@@ -135,6 +135,6 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
     return {
         generatedDietPlan: result.content,
         dailyCalorieIntake: dailyCalorieIntake,
-        dailyProteinIntake: 1.5 * desiredWeight,
+        dailyProteinIntake: 1.5 * targetWeightInKgs,
     };
 }

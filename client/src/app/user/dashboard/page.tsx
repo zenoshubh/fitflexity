@@ -61,7 +61,7 @@ const Dashboard = () => {
   }
 
   // Placeholder data for weight and goals (replace with real user data)
-  const currentWeight = user.weightInKgs ?? "72 kg";
+  const currentWeight = user.currentWeightInKgs ?? "72 kg";
   const goals = [
     { label: "Lose 5 kg", progress: 40 },
     { label: "Run 5K", progress: 70 },

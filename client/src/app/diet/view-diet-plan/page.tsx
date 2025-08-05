@@ -84,7 +84,7 @@ const ViewDietPlanPage = () => {
       setUpdating(true);
       try {
         const selectedMeal = dietPlan[selectedMealIdx];
-        const res = await api.put("/diet/update-diet-plan", {
+        const res = await api.put("/diet/edit-diet-plan", {
           meal: selectedMeal,
           updateInstruction: values.chatQuery,
         });

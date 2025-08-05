@@ -12,6 +12,9 @@ export interface User {
   isProfileComplete: boolean;
   createdAt: string;
   updatedAt: string;
+  updateRequired?: boolean;
+  hasDietPlan?: boolean;
+  hasWorkoutPlan?: boolean;
 }
 
 export interface AuthContextType {

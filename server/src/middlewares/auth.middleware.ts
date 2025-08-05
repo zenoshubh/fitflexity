@@ -22,18 +22,7 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as JwtPayload;
 
         const user = await db
-            .select({
-                id: users.id,
-                firstName: users.firstName,
-                email: users.email,
-                dateOfBirth: users.dateOfBirth,
-                weightInKgs: users.weightInKgs,
-                heightInCms: users.heightInCms,
-                goal: users.goal,
-                gender: users.gender,
-                activityLevel: users.activityLevel,
-                isProfileComplete: users.isProfileComplete,
-            })
+            .select()
             .from(users)
             .where(eq(users.id, decodedToken.userId))
             .limit(1);

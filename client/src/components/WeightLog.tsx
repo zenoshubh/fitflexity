@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import api from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const WeightLog = () => {
+  const { user } = useAuth();
+
   const [weightLogs, setWeightLogs] = useState<
     { id: number; weightInKgs: number; date: string }[]
   >([]);
@@ -10,6 +13,9 @@ const WeightLog = () => {
   const [weightLogsError, setWeightLogsError] = useState<string | null>(null);
   const [newWeight, setNewWeight] = useState("");
   const [loggingWeight, setLoggingWeight] = useState(false);
+  const [showProgressNotification, setShowProgressNotification] =
+    useState(false);
+  const [notificationWeightDiff, setNotificationWeightDiff] = useState(0);
 
   // Fetch weight logs only on mount
   useEffect(() => {
@@ -41,12 +47,23 @@ const WeightLog = () => {
       const res = await api.post("/weight-log/add-weight-log", {
         weightInKgs: parseFloat(newWeight),
       });
-      // Controller returns { logs: {...} }
       const { status, data, message } = res.data;
+      setWeightLogsError(null);
+
+      // Show notification if difference with lastUpdatedWeightInKgs is >= 2
+      const newLoggedWeight = data.newWeightLog.weightInKgs;
+      if (
+        user?.lastUpdatedWeightInKgs !== undefined &&
+        Math.abs(newLoggedWeight - user.lastUpdatedWeightInKgs) >= 2
+      ) {
+        setNotificationWeightDiff(Math.abs(newLoggedWeight - user.lastUpdatedWeightInKgs));
+        setShowProgressNotification(true);
+      }
+
       setWeightLogs((prev) => [
         {
           id: data.newWeightLog.id,
-          weightInKgs: data.newWeightLog.weightInKgs,
+          weightInKgs: newLoggedWeight,
           date: data.newWeightLog.date || new Date().toISOString(),
         },
         ...prev,
@@ -59,8 +76,43 @@ const WeightLog = () => {
     }
   };
 
+  // Placeholder for updating plans
+  const handleUpdatePlans = () => {
+    // TODO: Implement actual update logic
+    setShowProgressNotification(false);
+    alert("Your plans will be updated! (Implement logic here)");
+  };
+
   return (
     <div className="w-full max-w-3xl mb-10">
+      {/* Progress Notification */}
+      {showProgressNotification && (
+        <div
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-orange-100 border border-orange-400 rounded-xl shadow-lg px-6 py-4 flex flex-col md:flex-row items-center gap-4"
+          style={{ maxWidth: "80vw", width: "60vw" }}
+        >
+          <div className="flex-1 text-orange-700 font-medium text-sm whitespace-normal">
+            You're making great progress! Your weight has changed by{" "}
+            {notificationWeightDiff}kg since your last plan update.
+            <br />
+            Suggested: Consider updating your diet and workout plans.
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm"
+              onClick={handleUpdatePlans}
+            >
+              Yes, Update my plans
+            </button>
+            <button
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm"
+              onClick={() => setShowProgressNotification(false)}
+            >
+              Ignore
+            </button>
+          </div>
+        </div>
+      )}
       <h2 className="text-2xl font-bold text-gray-800 mb-4 ml-2">Weight Log</h2>
       <div className="bg-white/70 border border-gray-200 rounded-3xl shadow-2xl p-6 glassmorphism flex flex-col gap-6">
         {/* Log new weight */}

@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import api from "@/lib/api";
-import { useAuth } from "@/hooks/useAuth";
 
-const WeightLog = () => {
-  const { user } = useAuth();
-
+const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => void }) => {
   const [weightLogs, setWeightLogs] = useState<
     { id: number; weightInKgs: number; date: string }[]
   >([]);
@@ -13,28 +10,30 @@ const WeightLog = () => {
   const [weightLogsError, setWeightLogsError] = useState<string | null>(null);
   const [newWeight, setNewWeight] = useState("");
   const [loggingWeight, setLoggingWeight] = useState(false);
-  const [showProgressNotification, setShowProgressNotification] =
-    useState(false);
-  const [notificationWeightDiff, setNotificationWeightDiff] = useState(0);
 
-  // Fetch weight logs only on mount
+  // Notification state from backend
+  const [progressNotification, setProgressNotification] = useState<
+    string | null
+  >(null);
+
+  const fetchLogs = async () => {
+    setWeightLogsLoading(true);
+    setWeightLogsError(null);
+    try {
+      const res = await api.get("/weight-log/fetch-weight-logs");
+      const { status, data, message } = res.data;
+      if (data.logs && data.logs.length == 0) setWeightLogsError(message);
+      setWeightLogs(data.logs || []);
+    } catch (error: any) {
+      setWeightLogsError(
+        error.response?.data?.message || "Failed to load weight logs"
+      );
+    } finally {
+      setWeightLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchLogs = async () => {
-      setWeightLogsLoading(true);
-      setWeightLogsError(null);
-      try {
-        const res = await api.get("/weight-log/fetch-weight-logs");
-        const { status, data, message } = res.data;
-        if (data.logs && data.logs.length == 0) setWeightLogsError(message);
-        setWeightLogs(data.logs || []);
-      } catch (error: any) {
-        setWeightLogsError(
-          error.response?.data?.message || "Failed to load weight logs"
-        );
-      } finally {
-        setWeightLogsLoading(false);
-      }
-    };
     fetchLogs();
   }, []);
 
@@ -47,28 +46,22 @@ const WeightLog = () => {
       const res = await api.post("/weight-log/add-weight-log", {
         weightInKgs: parseFloat(newWeight),
       });
-      const { status, data, message } = res.data;
+      const { data } = res.data;
       setWeightLogsError(null);
 
-      // Show notification if difference with lastUpdatedWeightInKgs is >= 2
-      const newLoggedWeight = data.newWeightLog.weightInKgs;
-      if (
-        user?.lastUpdatedWeightInKgs !== undefined &&
-        Math.abs(newLoggedWeight - user.lastUpdatedWeightInKgs) >= 2
-      ) {
-        setNotificationWeightDiff(Math.abs(newLoggedWeight - user.lastUpdatedWeightInKgs));
-        setShowProgressNotification(true);
+      if (data.notification?.message) {
+        setProgressNotification(data.notification.message);
+      } else {
+        setProgressNotification(null);
       }
 
-      setWeightLogs((prev) => [
-        {
-          id: data.newWeightLog.id,
-          weightInKgs: newLoggedWeight,
-          date: data.newWeightLog.date || new Date().toISOString(),
-        },
-        ...prev,
-      ]);
+      await fetchLogs();
       setNewWeight("");
+
+      // Call parent to update current weight
+      if (onWeightLogged) {
+        onWeightLogged(parseFloat(newWeight));
+      }
     } catch {
       alert("Failed to log weight");
     } finally {
@@ -79,34 +72,31 @@ const WeightLog = () => {
   // Placeholder for updating plans
   const handleUpdatePlans = () => {
     // TODO: Implement actual update logic
-    setShowProgressNotification(false);
+    setProgressNotification(null);
     alert("Your plans will be updated! (Implement logic here)");
   };
 
   return (
     <div className="w-full max-w-3xl mb-10">
       {/* Progress Notification */}
-      {showProgressNotification && (
+      {progressNotification && (
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-orange-100 border border-orange-400 rounded-xl shadow-lg px-6 py-4 flex flex-col md:flex-row items-center gap-4"
           style={{ maxWidth: "80vw", width: "60vw" }}
         >
           <div className="flex-1 text-orange-700 font-medium text-sm whitespace-normal">
-            You're making great progress! Your weight has changed by{" "}
-            {notificationWeightDiff}kg since your last plan update.
-            <br />
-            Suggested: Consider updating your diet and workout plans.
+            {progressNotification}
           </div>
           <div className="flex gap-2">
             <button
               className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm"
               onClick={handleUpdatePlans}
             >
-              Yes, Update my plans
+              Yes, Update my plan
             </button>
             <button
               className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm"
-              onClick={() => setShowProgressNotification(false)}
+              onClick={() => setProgressNotification(null)}
             >
               Ignore
             </button>

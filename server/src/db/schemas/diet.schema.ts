@@ -22,16 +22,14 @@ export const diets = pgTable('diets', {
   description: text('description'),
   dietType: dietTypeEnum('diet_type').notNull(),
   numberOfMeals: integer('number_of_meals').notNull().default(3),
+  optionsPerMeal: integer('options_per_meal').notNull().default(2),
   intolerancesAndAllergies: text('intolerances_and_allergies'), // Comma-separated list of food intolerances
   excludedFoods: text('excluded_foods'), // Comma-separated list of foods to exclude
   // Store the full plan as JSON
   notes : text('notes'), // Additional notes for the diet plan
   plan: jsonb('plan').notNull(),
-  totalProtein: decimal('total_protein', { precision: 5, scale: 2 }),
-  totalCarbs: decimal('total_carbs', { precision: 5, scale: 2 }),
-  totalFats: decimal('total_fats', { precision: 5, scale: 2 }),
-  totalFibers: decimal('total_fibers', { precision: 5, scale: 2 }),
-  totalCalories: integer('total_calories'),
+  totalProtein: integer('total_protein').notNull(), // Total protein intake in grams
+  totalCalories: integer('total_calories').notNull(), // Total calorie intake
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

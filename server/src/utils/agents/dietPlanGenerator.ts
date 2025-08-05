@@ -132,5 +132,9 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
     - Do NOT include any extra text, explanation, or markdown. Only output the JSON array as shown above.
     `;
     const result = await llm.invoke(PROMPT);
-    return result.content;
+    return {
+        generatedDietPlan: result.content,
+        dailyCalorieIntake: dailyCalorieIntake,
+        dailyProteinIntake: 1.5 * desiredWeight,
+    };
 }

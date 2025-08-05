@@ -50,21 +50,21 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
     let planJson: any;
     try {
-        const dietPlan = await generateDietPlanWithLLM(
+        const { generatedDietPlan, dailyCalorieIntake, dailyProteinIntake } = await generateDietPlanWithLLM(
             userDetails[0],
             { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
         );
 
-        if (!dietPlan) {
+        if (!generatedDietPlan) {
             throw new ApiError(500, "Failed to generate diet plan");
         }
 
         // Convert the AI response to string
-        const dietPlanText = typeof dietPlan === 'string'
-            ? dietPlan
-            : Array.isArray(dietPlan)
-                ? JSON.stringify(dietPlan)
-                : String(dietPlan);
+        const dietPlanText = typeof generatedDietPlan === 'string'
+            ? generatedDietPlan
+            : Array.isArray(generatedDietPlan)
+                ? JSON.stringify(generatedDietPlan)
+                : String(generatedDietPlan);
 
 
         // Try to extract JSON from the response (in case model adds extra text)
@@ -86,8 +86,11 @@ const generateDietPlan = asyncHandler(async (req, res) => {
             intolerancesAndAllergies: intolerancesAndAllergies || null,
             excludedFoods: excludedFoods || null,
             numberOfMeals,
+            optionsPerMeal: numberOfMealOptions,
             notes: notes || null,
             plan: planJson,
+            totalProtein: dailyProteinIntake,
+            totalCalories: dailyCalorieIntake,
         }
 
         // --- Save to DB ---
@@ -141,7 +144,7 @@ const fetchDietPlan = asyncHandler(async (req, res) => {
     );
 })
 
-const updateDietPlan = asyncHandler(async (req, res) => {
+const editDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
     if (!user) {
         throw new ApiError(401, "User not authenticated");
@@ -352,4 +355,4 @@ const deleteDietPlan = asyncHandler(async (req, res) => {
     });
 })
 
-export { generateDietPlan, fetchDietPlan, updateDietPlan, chatDietPlan, deleteDietPlan };
+export { generateDietPlan, fetchDietPlan, editDietPlan, chatDietPlan, deleteDietPlan };

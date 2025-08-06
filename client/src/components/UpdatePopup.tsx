@@ -1,8 +1,16 @@
 import React, { useState } from "react";
 import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 const activityLevels = [
   "sedentary",
@@ -22,14 +30,18 @@ const goals = [
   "extreme_weight_gain_1kg_per_week",
 ];
 
-const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
+const UpdatePopup = ({
+  onClose,
+  onStatusChange,
+}: { onClose: () => void; onStatusChange?: () => void }) => {
   const [step, setStep] = useState(1);
-  const [activityLevel, setActivityLevel] = useState("");
-  const [goal, setGoal] = useState("");
+  const { user } = useAuth();
+  const [activityLevel, setActivityLevel] = useState(user?.activityLevel || "");
+  const [goal, setGoal] = useState(user?.goal || "");
   const [planOption, setPlanOption] = useState("");
   const [resetPref, setResetPref] = useState(""); // new state for step 3
+  const router = useRouter();
 
-  // Dummy API call
   const handleProfileUpdate = async () => {
     try {
       const res = await api.put("/users/update-profile", {
@@ -56,9 +68,74 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  const handleFinish = () => {
-    // Here you can handle the final submission logic
-    // e.g. send {activityLevel, goal, planOption, resetPref} to API
+  const handleFinish = async () => {
+    // Logic for final submission based on planOption and resetPref
+    try {
+      if (planOption === "diet") {
+        if (resetPref === "keep-diet") {
+          await api.put("/diet/update-diet-plan");
+          await api.put("/users/update-profile", {
+            lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+            updateRequired: false,
+          });
+          if (onStatusChange) onStatusChange();
+          toast.success("Diet plan updated!");
+          onClose();
+        } else if (resetPref === "reset-diet") {
+          router.push("/diet/create-diet-plan?mode=update");
+        }
+      } else if (planOption === "workout") {
+        if (resetPref === "keep-workout") {
+          await api.put("/workout/update-workout-plan");
+          await api.put("/users/update-profile", {
+            lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+            updateRequired: false,
+          });
+          if (onStatusChange) onStatusChange();
+          toast.success("Workout plan updated!");
+          onClose();
+        } else if (resetPref === "reset-workout") {
+          router.push("/workout/create-workout-plan?mode=update");
+        }
+      } else if (planOption === "both") {
+        if (resetPref === "reset-diet") {
+          router.push(
+            "/diet/create-diet-plan?mode=update&action=newDietPrefAndOldPrefWorkout"
+          );
+        } else if (resetPref === "reset-workout") {
+          router.push(
+            "/workout/create-workout-plan?mode=update&action=newWorkoutPrefAndOldPrefDiet"
+          );
+        } else if (resetPref === "reset-both") {
+          router.push("/diet/create-diet-plan?mode=update&redirect=workout");
+        } else if (resetPref === "reset-none") {
+          await api.put("/diet/update-diet-plan");
+          await api.put("/workout/update-workout-plan");
+          await api.put("/users/update-profile", {
+            lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+            updateRequired: false,
+          });
+          if (onStatusChange) onStatusChange();
+          toast.success("Diet and workout plans updated!");
+          onClose();
+        }
+      } else if (planOption === "none") {
+        if (onStatusChange) onStatusChange();
+        onClose();
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Something went wrong.");
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await api.put("/users/update-profile", {
+        lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+        updateRequired: false,
+      });
+      if (onStatusChange) onStatusChange();
+    } catch {}
     onClose();
   };
 
@@ -82,7 +159,9 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               >
                 <option value="">Select activity level</option>
                 {activityLevels.map((level) => (
-                  <option key={level} value={level}>{level}</option>
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
                 ))}
               </select>
             </div>
@@ -95,12 +174,19 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               >
                 <option value="">Select goal</option>
                 {goals.map((g) => (
-                  <option key={g} value={g}>{g}</option>
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
                 ))}
               </select>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button variant="outline" onClick={() => setStep(2)}>
+                Skip
+              </Button>
               <Button
                 onClick={handleProfileUpdate}
                 disabled={!activityLevel || !goal}
@@ -116,7 +202,8 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
             <DialogHeader>
               <DialogTitle>Update Your Fitness Plans?</DialogTitle>
               <DialogDescription>
-                It is suggested to update your plans after changing your profile.
+                It is suggested to update your plans after changing your
+                profile.
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2 mb-4 mt-2">
@@ -146,11 +233,10 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               </Button>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button
-                onClick={handlePlanUpdate}
-                disabled={!planOption}
-              >
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handlePlanUpdate} disabled={!planOption}>
                 Next
               </Button>
             </div>
@@ -194,13 +280,17 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               {planOption === "workout" && (
                 <>
                   <Button
-                    variant={resetPref === "keep-workout" ? "default" : "outline"}
+                    variant={
+                      resetPref === "keep-workout" ? "default" : "outline"
+                    }
                     onClick={() => setResetPref("keep-workout")}
                   >
                     Keep current workout preferences
                   </Button>
                   <Button
-                    variant={resetPref === "reset-workout" ? "default" : "outline"}
+                    variant={
+                      resetPref === "reset-workout" ? "default" : "outline"
+                    }
                     onClick={() => setResetPref("reset-workout")}
                   >
                     Reset workout preferences
@@ -216,7 +306,9 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
                     Reset preferences for diet only
                   </Button>
                   <Button
-                    variant={resetPref === "reset-workout" ? "default" : "outline"}
+                    variant={
+                      resetPref === "reset-workout" ? "default" : "outline"
+                    }
                     onClick={() => setResetPref("reset-workout")}
                   >
                     Reset preferences for workout only
@@ -237,11 +329,10 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               )}
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={onClose}>Cancel</Button>
-              <Button
-                onClick={handleFinish}
-                disabled={!resetPref}
-              >
+              <Button variant="outline" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handleFinish} disabled={!resetPref}>
                 Finish
               </Button>
             </div>

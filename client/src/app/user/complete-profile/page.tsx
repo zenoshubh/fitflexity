@@ -28,11 +28,6 @@ import { useEffect, useState } from "react";
 import Loader from "@/components/Loader";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import Image from "next/image";
-import Male_10percent from "@/assets/Male_lessThan10percent.png";
-import Male_11To18percent from "@/assets/Male_11To18percent.png";
-import Male_19To25percent from "@/assets/Male_19To25percent.png";
-import Male_moreThan26percent from "@/assets/Male_moreThan26percent.png";
 import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -51,12 +46,7 @@ const activityLevelEnum = z.enum([
   "very_active",
   "super_active",
 ]);
-const bodyFatPercentageEnum = z.enum([
-  "less_than_10",
-  "between_11_and_18",
-  "between_19_and_25",
-  "more_than_26",
-]);
+
 const goalEnum = z.enum([
   "maintain_weight",
   "mild_weight_loss_0_25kg_per_week",
@@ -79,33 +69,9 @@ const formSchema = z.object({
   heightInCms: z
     .number()
     .min(50, { message: "Height must be at least 50 cm." }),
-  bodyFatPercentage: bodyFatPercentageEnum,
   activityLevel: activityLevelEnum,
   goal: goalEnum,
 });
-
-const bodyFatOptions = [
-  {
-    value: "less_than_10",
-    img: Male_10percent,
-    label: "<10%",
-  },
-  {
-    value: "between_11_and_18",
-    img: Male_11To18percent,
-    label: "11-18%",
-  },
-  {
-    value: "between_19_and_25",
-    img: Male_19To25percent,
-    label: "19-25%",
-  },
-  {
-    value: "more_than_26",
-    img: Male_moreThan26percent,
-    label: ">26%",
-  },
-];
 
 const steps = [
   {
@@ -117,11 +83,6 @@ const steps = [
     label: "Body Metrics",
     description: "Enter your current weight, target weight, and height.",
     keys: ["weightInKgs", "targetWeightInKgs", "heightInCms"],
-  },
-  {
-    label: "Body Fat Percentage",
-    description: "Select your estimated body fat percentage.",
-    keys: ["bodyFatPercentage"],
   },
   {
     label: "Activity & Goal",
@@ -147,7 +108,6 @@ const CompleteProfilePage = () => {
       weightInKgs: 0,
       targetWeightInKgs: 0,
       heightInCms: 0,
-      bodyFatPercentage: "between_19_and_25",
       activityLevel: "lightly_active",
       goal: "maintain_weight",
     },
@@ -357,68 +317,6 @@ const CompleteProfilePage = () => {
           </div>
         );
       case 2:
-        return (
-          <FormField
-            control={form.control}
-            name="bodyFatPercentage"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-6 w-full items-center">
-                <FormLabel>
-                  <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-                    Body Fat Percentage
-                  </h2>
-                </FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    className="flex gap-4"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    {bodyFatOptions.map((option) => {
-                      const checked = field.value === option.value;
-                      return (
-                        <RadioGroupItem
-                          key={option.value}
-                          value={option.value}
-                          id={`bodyfat-${option.value}`}
-                          className="sr-only"
-                        />
-                      );
-                    })}
-                    {bodyFatOptions.map((option) => {
-                      const checked = field.value === option.value;
-                      return (
-                        <label
-                          key={option.value}
-                          htmlFor={`bodyfat-${option.value}`}
-                          className={`flex flex-col items-center cursor-pointer border rounded-lg p-2 transition
-                            ${
-                              checked
-                                ? "ring-2 ring-primary border-primary"
-                                : "border-muted"
-                            }
-                          `}
-                          tabIndex={0}
-                        >
-                          <Image
-                            src={option.img}
-                            alt={option.label}
-                            width={80}
-                            height={80}
-                            className="rounded mb-2"
-                          />
-                          <span className="text-xs">{option.label}</span>
-                        </label>
-                      );
-                    })}
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-      case 3:
         return (
           <div className="flex flex-col gap-8 w-full items-center">
             <FormField

@@ -254,23 +254,33 @@ const completeProfile = asyncHandler(async (req, res) => {
 })
 
 const updateProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, gender, heightInCms, activityLevel, goal } = req.body;
+    const { dateOfBirth, gender, heightInCms, activityLevel, goal, lastUpdatedWeightInKgs, updateRequired } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    // Only require at least one of activityLevel or goal for partial update
-    if (!activityLevel && !goal && !dateOfBirth && !gender && !heightInCms) {
+    // Only require at least one field to update (allow boolean false for updateRequired)
+    if (
+        activityLevel === undefined &&
+        goal === undefined &&
+        dateOfBirth === undefined &&
+        gender === undefined &&
+        heightInCms === undefined &&
+        lastUpdatedWeightInKgs === undefined &&
+        updateRequired === undefined
+    ) {
         throw new ApiError(400, "At least one field is required to update");
     }
 
     const updateData: Record<string, any> = {};
-    if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
-    if (gender) updateData.gender = gender;
-    if (heightInCms) updateData.heightInCms = heightInCms;
-    if (activityLevel) updateData.activityLevel = activityLevel;
-    if (goal) updateData.goal = goal;
+    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) updateData.gender = gender;
+    if (heightInCms !== undefined) updateData.heightInCms = heightInCms;
+    if (activityLevel !== undefined) updateData.activityLevel = activityLevel;
+    if (goal !== undefined) updateData.goal = goal;
+    if (lastUpdatedWeightInKgs !== undefined) updateData.lastUpdatedWeightInKgs = lastUpdatedWeightInKgs;
+    if (updateRequired !== undefined) updateData.updateRequired = updateRequired;
 
     // Update user profile
     const updatedUser = await db

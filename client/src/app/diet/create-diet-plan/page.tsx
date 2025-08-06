@@ -17,7 +17,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import withAuth from "@/components/withAuth";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import Loader from "@/components/Loader";
 import api from "@/lib/api";
 import {
@@ -29,22 +28,12 @@ import {
   Bone,
   Wheat,
   UtensilsCrossed,
-  Info,
-  ListChecks,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useSearchParams } from "next/navigation";
 
 // --- Multi-step form schema ---

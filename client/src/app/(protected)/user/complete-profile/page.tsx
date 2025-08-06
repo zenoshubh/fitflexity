@@ -29,8 +29,6 @@ import Loader from "@/components/Loader";
 import { toast } from "sonner";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 
@@ -409,20 +407,9 @@ const CompleteProfilePage = () => {
   return (
     <div
       className="min-h-screen flex flex-col relative bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#f7f7f9]"
-      style={{
-        backgroundImage:
-          "radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px), radial-gradient(circle, #e5e7eb 1.5px, transparent 1.5px)",
-        backgroundSize: "28px 28px",
-        backgroundPosition: "0 0, 14px 14px",
-      }}
     >
-      <Navbar />
       <main
         className="flex-1 flex flex-col justify-center"
-        style={{
-          paddingTop: `${HEADER_HEIGHT}px`,
-          paddingBottom: `${FOOTER_HEIGHT + 32}px`,
-        }}
       >
         <section className="w-full px-4 md:px-10 py-10 md:py-16 max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8 tracking-tight text-left">
@@ -552,14 +539,6 @@ const CompleteProfilePage = () => {
           </Form>
         </section>
       </main>
-      <Footer />
-      <style jsx global>{`
-        .glassmorphism {
-          background: rgba(255, 255, 255, 0.7);
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-          backdrop-filter: blur(12px);
-        }
-      `}</style>
     </div>
   );
 };

@@ -2,6 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormField,
@@ -10,124 +12,135 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { z } from "zod";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import api from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import Loader from "@/components/Loader";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import withAuth from "@/components/withAuth";
-import Navbar from "@/components/Navbar";
-import Loader from "@/components/Loader";
-import api from "@/lib/api";
 import {
-  Salad,
-  Egg,
-  Drumstick,
-  Leaf,
+  Dumbbell,
   Flame,
-  Bone,
-  Wheat,
-  UtensilsCrossed,
+  HeartPulse,
+  BicepsFlexed,
+  Bike,
+  User,
+  Users,
+  Award,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 
-// --- Multi-step form schema ---
-const dietTypeEnum = z.enum([
-  "vegetarian",
-  "eggetarian",
-  "nonvegetarian",
-  "vegan",
-  "keto",
-  "paleo",
-  "mediterranean",
-  "gluten_free",
+const HEADER_HEIGHT = 76;
+const FOOTER_HEIGHT = 56;
+
+// Enums as per schema
+const workoutTypeEnum = z.enum([
+  "weighted",
+  "bodyweight",
+  "HIIT",
+  "weighted+cardio",
+  "bodyweight+cardio",
 ]);
 
+const experienceLevelEnum = z.enum(["beginner", "intermediate", "advanced"]);
+
 const formSchema = z.object({
-  dietType: dietTypeEnum,
-  intolerancesAndAllergies: z
-    .string()
-    .max(100, { message: "Keep it under 100 characters." }),
-  excludedFoods: z
-    .string()
-    .max(100, { message: "Keep it under 100 characters." }),
-  numberOfMeals: z.number().min(1).max(6),
-  numberOfMealOptions: z.number().min(1).max(3),
-  notes: z.string().max(200, { message: "Max 200 characters." }),
+  workoutType: workoutTypeEnum,
+  numberOfDays: z
+    .number()
+    .min(2, { message: "At least 2 days is required" })
+    .max(6, { message: "Max 6 days allowed" }),
+  totalDurationMins: z
+    .number()
+    .min(30, { message: "At least 30 minutes is required" })
+    .max(120, { message: "Max 120 minutes allowed" }),
+  experience: experienceLevelEnum,
+  notes: z.string().max(200, { message: "Max 200 characters allowed" }),
 });
 
 const steps = [
   {
-    label: "Choose your diet style",
-    description: "Pick the eating pattern that fits you best.",
-    key: "dietType",
+    label: "Choose Workout Type",
+    description: "Pick the style of workouts you want.",
+    key: "workoutType",
   },
   {
-    label: "Allergies & intolerances",
-    description: "Anything your plan should avoid?",
-    key: "intolerancesAndAllergies",
+    label: "Number of Days",
+    description: "How many days per week do you want to train?",
+    key: "numberOfDays",
   },
   {
-    label: "Foods to skip",
-    description: "List any foods you want left out.",
-    key: "excludedFoods",
+    label: "Session Duration",
+    description: "How long should each workout session be?",
+    key: "totalDurationMins",
   },
   {
-    label: "Meals per day",
-    description: "How many times do you want to eat daily?",
-    key: "numberOfMeals",
-  },
-  {
-    label: "Meal options",
-    description: "How much variety do you want for each meal?",
-    key: "numberOfMealOptions",
+    label: "Experience Level",
+    description: "Select your training experience.",
+    key: "experience",
   },
   {
     label: "Notes",
-    description: "Anything else we should know? (optional)",
+    description: "Any special requests or notes? (optional)",
     key: "notes",
   },
 ];
 
-const dietTypeOptions = [
-  { value: "vegetarian", label: "Vegetarian", icon: Salad },
-  { value: "eggetarian", label: "Eggetarian", icon: Egg },
-  { value: "nonvegetarian", label: "Non-Veg", icon: Drumstick },
-  { value: "vegan", label: "Vegan", icon: Leaf },
-  { value: "keto", label: "Keto", icon: Flame },
-  { value: "paleo", label: "Paleo", icon: Bone },
-  { value: "mediterranean", label: "Mediterranean", icon: UtensilsCrossed },
-  { value: "gluten_free", label: "Gluten Free", icon: Wheat },
+const workoutTypeOptions = [
+  { value: "bodyweight", label: "Bodyweight", icon: User },
+  { value: "weighted", label: "Weighted", icon: Dumbbell },
+  { value: "HIIT", label: "HIIT", icon: Flame },
+  {
+    value: "bodyweight+cardio",
+    label: "Bodyweight+Cardio",
+    icon: BicepsFlexed,
+  },
+  { value: "weighted+cardio", label: "Weighted+Cardio", icon: Bike },
 ];
 
-const CreateDietPlanPage = () => {
+const experienceOptions = [
+  { value: "beginner", label: "Beginner", icon: User },
+  { value: "intermediate", label: "Intermediate", icon: Users },
+  { value: "advanced", label: "Advanced", icon: Award },
+];
+
+const CreateWorkoutPlanPage = () => {
+  const [workoutPlan, setWorkoutPlan] = useState<any[] | undefined>([]);
   const { user } = useAuth();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const mode = searchParams?.get("mode");
-  const [dietPlan, setDietPlan] = useState<any[] | undefined>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState("Generating your plan...");
+  const [loadingMsg, setLoadingMsg] = useState(
+    "Generating your workout plan..."
+  );
   const [step, setStep] = useState(0);
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
   const [prefLoading, setPrefLoading] = useState(false);
+
+  const loadingMessages = [
+    "Calculating your workout metrics...",
+    "Selecting the best workout combinations...",
+    "AI is generating your personalized workouts...",
+    "Balancing workout intensity and preferences...",
+    "Almost done! Finalizing your plan...",
+  ];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
-      dietType: "vegetarian",
-      intolerancesAndAllergies: "",
-      excludedFoods: "",
-      numberOfMeals: 3,
-      numberOfMealOptions: 2,
+      workoutType: "weighted",
+      numberOfDays: 3,
+      totalDurationMins: 60,
+      experience: "beginner",
       notes: "",
     },
   });
@@ -137,29 +150,27 @@ const CreateDietPlanPage = () => {
     if (mode === "update") {
       setPrefLoading(true);
       api
-        .get("/diet/get-diet-preferences")
+        .get("/workout/get-workout-preferences")
         .then((res) => {
           const {
-            dietType,
-            numberOfMeals,
-            optionsPerMeal,
-            intolerancesAndAllergies,
-            excludedFoods,
+            workoutType,
+            numberOfDays,
+            totalDurationMins,
+            experience,
             notes,
           } = res.data?.data || {};
-          if (dietType) {
+          if (workoutType) {
             form.reset({
-              dietType: dietType,
-              intolerancesAndAllergies: intolerancesAndAllergies || "",
-              excludedFoods: excludedFoods || "",
-              numberOfMeals: numberOfMeals || 3,
-              numberOfMealOptions: optionsPerMeal || 2,
+              workoutType: workoutType,
+              numberOfDays: numberOfDays || 3,
+              totalDurationMins: totalDurationMins || 60,
+              experience: experience || "beginner",
               notes: notes || "",
             });
           }
         })
         .catch(() => {
-          toast.error("Failed to fetch diet preferences");
+          toast.error("Failed to fetch workout preferences");
         })
         .finally(() => setPrefLoading(false));
     }
@@ -203,29 +214,86 @@ const CreateDietPlanPage = () => {
   const handleSubmit = async () => {
     setSubmitting(true);
     setLoading(true);
-    setLoadingMsg("Crunching the numbers...");
+    setLoadingMsg(loadingMessages[0]);
+    let msgIdx = 1;
+    let interval: NodeJS.Timeout | null = null;
     try {
+      interval = setInterval(() => {
+        setLoadingMsg(loadingMessages[msgIdx % loadingMessages.length]);
+        msgIdx++;
+      }, 1800);
+
       const values = form.getValues();
 
-      const response = await api.post("/diet/generate-diet-plan", {
+      // Special update mode: new workout pref, old diet pref
+      if (
+        mode === "update" &&
+        searchParams?.get("action") === "newWorkoutPrefAndOldPrefDiet"
+      ) {
+        // 1. Delete old workout plan
+        await api.delete("/workout/delete-workout-plan");
+        // 2. Create new workout plan
+        const workoutRes = await api.post("/workout/generate-workout-plan", {
+          ...values,
+          userId: user?.id,
+        });
+        const { status, data, message } = workoutRes.data;
+        if (status == 200) {
+          setWorkoutPlan(data.plan);
+          toast.success(message);
+        } else {
+          setWorkoutPlan(undefined);
+          toast.error(`Failed to create workout plan: ${message}`);
+          setLoading(false);
+          setSubmitting(false);
+          setLoadingMsg(loadingMessages[0]);
+          return;
+        }
+        // 3. Create new diet plan (with old preferences)
+        await api.put("/diet/update-diet-plan");
+        // Update lastUpdatedWeightInKgs and updateRequired for user
+        await api.put("/users/update-profile", {
+          lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+          updateRequired: false,
+        });
+        toast.success("Old diet plan updated with previous preferences.");
+        setLoading(false);
+        setSubmitting(false);
+        setLoadingMsg(loadingMessages[0]);
+        return;
+      }
+
+      if (mode === "update") {
+        await api.delete("/workout/delete-workout-plan");
+        // Update lastUpdatedWeightInKgs and updateRequired for user
+        await api.put("/users/update-profile", {
+          lastUpdatedWeightInKgs: user?.currentWeightInKgs,
+          updateRequired: false,
+        });
+      }
+
+      const response = await api.post("/workout/generate-workout-plan", {
         ...values,
         userId: user?.id,
       });
+
       const { status, data, message } = response.data;
+
       if (status == 200) {
-        setDietPlan(data.plan);
-        toast.success(message);
+        setWorkoutPlan(data.plan);
+        toast.success(`${message}`);
       } else {
-        setDietPlan(undefined);
-        toast.error(`Failed to create diet plan: ${message}`);
+        setWorkoutPlan(undefined);
+        toast.error(`Failed to create workout plan: ${message}`);
       }
     } catch (error: any) {
-      setDietPlan(undefined);
+      setWorkoutPlan(undefined);
       toast.error(error?.response?.data?.message || "Something went wrong.");
     } finally {
+      if (interval) clearInterval(interval);
       setLoading(false);
       setSubmitting(false);
-      setLoadingMsg("Generating your plan...");
+      setLoadingMsg(loadingMessages[0]);
     }
   };
 
@@ -235,11 +303,11 @@ const CreateDietPlanPage = () => {
   const renderStep = () => {
     const current = steps[step];
     switch (current.key) {
-      case "dietType":
+      case "workoutType":
         return (
           <FormField
             control={form.control}
-            name="dietType"
+            name="workoutType"
             render={({ field }) => (
               <FormItem className="flex flex-col gap-6 w-full">
                 <FormLabel>
@@ -250,10 +318,9 @@ const CreateDietPlanPage = () => {
                 <p className="text-gray-500 text-center mb-4">
                   {current.description}
                 </p>
-
                 <FormControl>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full">
-                    {dietTypeOptions.map((opt) => {
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full">
+                    {workoutTypeOptions.map((opt) => {
                       const Icon = opt.icon;
                       const selected = field.value === opt.value;
                       return (
@@ -301,122 +368,51 @@ const CreateDietPlanPage = () => {
             )}
           />
         );
-      case "intolerancesAndAllergies": {
-        const commonAllergies = [
-          "Dairy",
-          "Eggs",
-          "Gluten",
-          "Peanuts",
-          "Tree Nuts",
-          "Soy",
-          "Shellfish",
-          "Fish",
-          "Sesame",
-        ];
+      case "numberOfDays":
         return (
           <FormField
             control={form.control}
-            name="intolerancesAndAllergies"
-            render={({ field }) => {
-              const value = field.value || "";
-              const selected = value
-                ? value
-                    .split(",")
-                    .map((v: string) => v.trim())
-                    .filter(Boolean)
-                : [];
-              const handleBadge = (item: string) => {
-                let arr = [...selected];
-                if (arr.includes(item)) {
-                  arr = arr.filter((i) => i !== item);
-                } else {
-                  arr.push(item);
-                }
-                field.onChange(arr.join(", "));
-              };
-              return (
-                <FormItem className="flex flex-col gap-6 w-full items-center">
-                  <FormLabel>
-                    <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
-                      {current.label}
-                    </h2>
-                    
-                  </FormLabel>
-                  <p className="text-gray-500 text-center mb-4">
-                      {current.description}
-                    </p>
-                  <FormControl>
-                    <div className="flex flex-wrap gap-2 justify-center mb-2">
-                      {commonAllergies.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          className={`px-4 py-1.5 rounded-full border text-sm font-medium transition focus:outline-none ${
-                            selected.includes(opt)
-                              ? "bg-orange-500 text-white border-orange-500 shadow"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-orange-50"
-                          }`}
-                          onClick={() => handleBadge(opt)}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </FormControl>
-                  <div className="flex flex-col items-center w-full max-w-md">
-                    <label className="text-sm text-gray-500 mb-1">Other</label>
-                    <Input
-                      className="w-full text-base border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0"
-                      placeholder="Add other intolerances/allergies (comma separated)"
-                      value={selected
-                        .filter((s: string) => !commonAllergies.includes(s))
-                        .join(", ")}
-                      onChange={(e) => {
-                        const others = e.target.value
-                          .split(",")
-                          .map((v: string) => v.trim())
-                          .filter(Boolean);
-                        const newVal = [
-                          ...selected.filter((s: string) =>
-                            commonAllergies.includes(s)
-                          ),
-                          ...others,
-                        ].join(", ");
-                        field.onChange(newVal);
-                      }}
-                    />
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
-        );
-      }
-      case "excludedFoods":
-        return (
-          <FormField
-            control={form.control}
-            name="excludedFoods"
+            name="numberOfDays"
             render={({ field }) => (
               <FormItem className="flex flex-col gap-6 w-full items-center">
                 <FormLabel>
                   <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
                     {current.label}
                   </h2>
-                  
                 </FormLabel>
                 <p className="text-gray-500 text-center mb-4">
-                    {current.description}
-                  </p>
+                  {current.description}
+                </p>
                 <FormControl>
-                  <div className="flex flex-col items-center justify-center bg-white/80 border border-gray-200 rounded-2xl px-8 py-6 shadow-lg w-full max-w-md">
-                    <Input
-                      className="w-full text-base border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0 px-4 py-4 text-center"
-                      style={{ minHeight: 56, fontSize: 18 }}
-                      placeholder="e.g. gluten, soy, beef"
-                      {...field}
-                    />
+                  <div className="flex gap-3 justify-center">
+                    {[2, 3, 4, 5, 6].map((n) => (
+                      <motion.button
+                        key={n}
+                        type="button"
+                        whileTap={{ scale: 0.92 }}
+                        whileHover={{ scale: 1.08 }}
+                        animate={{
+                          backgroundColor:
+                            field.value === n ? "#f97316" : "#fff",
+                          color: field.value === n ? "#fff" : "#222",
+                          boxShadow:
+                            field.value === n ? "0 2px 16px #f9731633" : "none",
+                        }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20,
+                        }}
+                        className={`rounded-xl border-2 px-5 py-3 font-semibold text-lg transition-all focus:outline-none ${
+                          field.value === n
+                            ? "border-orange-500"
+                            : "border-gray-200 hover:border-orange-300"
+                        }`}
+                        onClick={() => field.onChange(n)}
+                      >
+                        {n}
+                      </motion.button>
+                    ))}
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -424,86 +420,105 @@ const CreateDietPlanPage = () => {
             )}
           />
         );
-      case "numberOfMeals":
+      case "totalDurationMins":
         return (
-          <div className="flex flex-col gap-6 w-full">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {current.label}
-            </h2>
-            <p className="text-gray-500 text-center mb-4">
-              {current.description}
-            </p>
-            <div className="flex gap-3 justify-center">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <motion.button
-                  key={n}
-                  type="button"
-                  whileTap={{ scale: 0.92 }}
-                  whileHover={{ scale: 1.08 }}
-                  animate={{
-                    backgroundColor:
-                      form.watch("numberOfMeals") === n ? "#f97316" : "#fff",
-                    color: form.watch("numberOfMeals") === n ? "#fff" : "#222",
-                    boxShadow:
-                      form.watch("numberOfMeals") === n
-                        ? "0 2px 16px #f9731633"
-                        : "none",
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className={`rounded-xl border-2 px-5 py-3 font-semibold text-lg transition-all focus:outline-none ${
-                    form.watch("numberOfMeals") === n
-                      ? "border-orange-500"
-                      : "border-gray-200 hover:border-orange-300"
-                  }`}
-                  onClick={() => form.setValue("numberOfMeals", n)}
-                >
-                  {n}
-                </motion.button>
-              ))}
-            </div>
-          </div>
+          <FormField
+            control={form.control}
+            name="totalDurationMins"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-6 w-full items-center">
+                <FormLabel>
+                  <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
+                    {current.label}
+                  </h2>
+                </FormLabel>
+                <p className="text-gray-500 text-center mb-4">
+                  {current.description}
+                </p>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="30"
+                    max="120"
+                    className="w-full text-base border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? "" : Number(e.target.value)
+                      )
+                    }
+                    placeholder="Minutes per session"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         );
-      case "numberOfMealOptions":
+      case "experience":
         return (
-          <div className="flex flex-col gap-6 w-full">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              {current.label}
-            </h2>
-            <p className="text-gray-500 text-center mb-4">
-              {current.description}
-            </p>
-            <div className="flex gap-3 justify-center">
-              {[1, 2, 3].map((n) => (
-                <motion.button
-                  key={n}
-                  type="button"
-                  whileTap={{ scale: 0.92 }}
-                  whileHover={{ scale: 1.08 }}
-                  animate={{
-                    backgroundColor:
-                      form.watch("numberOfMealOptions") === n
-                        ? "#f97316"
-                        : "#fff",
-                    color:
-                      form.watch("numberOfMealOptions") === n ? "#fff" : "#222",
-                    boxShadow:
-                      form.watch("numberOfMealOptions") === n
-                        ? "0 2px 16px #f9731633"
-                        : "none",
-                  }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className={`rounded-xl border-2 px-5 py-3 font-semibold text-lg transition-all focus:outline-none ${
-                    form.watch("numberOfMealOptions") === n
-                      ? "border-orange-500"
-                      : "border-gray-200 hover:border-orange-300"
-                  }`}
-                  onClick={() => form.setValue("numberOfMealOptions", n)}
-                >
-                  {n}
-                </motion.button>
-              ))}
-            </div>
-          </div>
+          <FormField
+            control={form.control}
+            name="experience"
+            render={({ field }) => (
+              <FormItem className="flex flex-col gap-6 w-full">
+                <FormLabel>
+                  <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
+                    {current.label}
+                  </h2>
+                </FormLabel>
+                <p className="text-gray-500 text-center mb-4">
+                  {current.description}
+                </p>
+                <FormControl>
+                  <div className="grid grid-cols-3 gap-4 w-full">
+                    {experienceOptions.map((opt) => {
+                      const Icon = opt.icon;
+                      const selected = field.value === opt.value;
+                      return (
+                        <motion.button
+                          key={opt.value}
+                          type="button"
+                          whileTap={{ scale: 0.92 }}
+                          whileHover={{ scale: 1.08 }}
+                          animate={{
+                            backgroundColor: selected ? "#f97316" : "#fff",
+                            color: selected ? "#fff" : "#222",
+                            boxShadow: selected
+                              ? "0 2px 16px #f9731633"
+                              : "none",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 20,
+                          }}
+                          className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all px-4 py-6 cursor-pointer focus:outline-none ${
+                            selected
+                              ? "border-orange-500"
+                              : "border-gray-200 hover:border-orange-300"
+                          }`}
+                          onClick={() => field.onChange(opt.value)}
+                        >
+                          <Icon size={36} />
+                          <span className="font-medium text-base mt-1">
+                            {opt.label}
+                          </span>
+                          {selected && (
+                            <CheckCircle2
+                              className="text-white bg-orange-500 rounded-full mt-2"
+                              size={20}
+                            />
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         );
       case "notes":
         return (
@@ -516,15 +531,14 @@ const CreateDietPlanPage = () => {
                   <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
                     {current.label}
                   </h2>
-                  
                 </FormLabel>
                 <p className="text-gray-500 text-center mb-4">
-                    {current.description}
-                  </p>
+                  {current.description}
+                </p>
                 <FormControl>
                   <div className="flex flex-col items-center justify-center bg-white/80 border border-gray-200 rounded-2xl px-8 py-8 shadow-lg w-full max-w-2xl">
                     <textarea
-                      className="w-full min-h-[120px] text-lg border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0 px-5 py-5 resize-vertical text-left placeholder-gray-400"
+                      className="w-full min-h-[100px] text-lg border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0 px-5 py-5 resize-vertical text-left placeholder-gray-400"
                       style={{ fontSize: 20, lineHeight: 1.6 }}
                       placeholder="Anything else? (optional)"
                       maxLength={200}
@@ -548,15 +562,15 @@ const CreateDietPlanPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative bg-[#F7F7F9]">
-      <Navbar />
+    <div
+      className="min-h-screen flex flex-col relative bg-[#F7F7F9]"
+    >
       <main
         className="flex-1 flex flex-col justify-center"
-        style={{ marginLeft: 80, minHeight: "100vh" }}
       >
-        <section className="w-full px-4 md:px-10 py-10 md:py-16">
+        <section className="w-full px-4 md:px-10 py-10 md:py-16 max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8 tracking-tight text-left">
-            Let's build your perfect diet plan
+            Build your personalized workout plan
           </h1>
           {/* Progress Bar */}
           <div className="w-full mb-10">
@@ -693,4 +707,4 @@ const CreateDietPlanPage = () => {
   );
 };
 
-export default withAuth(CreateDietPlanPage);
+export default withAuth(CreateWorkoutPlanPage);

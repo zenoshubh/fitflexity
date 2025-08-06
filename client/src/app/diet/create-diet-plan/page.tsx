@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,6 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useSearchParams } from "next/navigation";
 
 // --- Multi-step form schema ---
 const dietTypeEnum = z.enum([
@@ -60,9 +61,6 @@ const dietTypeEnum = z.enum([
 
 const formSchema = z.object({
   dietType: dietTypeEnum,
-  desiredWeight: z
-    .number({ invalid_type_error: "Please enter your target weight." })
-    .min(1, { message: "Enter your goal weight to get started!" }),
   intolerancesAndAllergies: z
     .string()
     .max(100, { message: "Keep it under 100 characters." }),
@@ -79,11 +77,6 @@ const steps = [
     label: "Choose your diet style",
     description: "Pick the eating pattern that fits you best.",
     key: "dietType",
-  },
-  {
-    label: "Target weight",
-    description: "What’s your goal weight?",
-    key: "desiredWeight",
   },
   {
     label: "Allergies & intolerances",
@@ -125,6 +118,8 @@ const dietTypeOptions = [
 
 const CreateDietPlanPage = () => {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const mode = searchParams?.get("mode");
   const [dietPlan, setDietPlan] = useState<any[] | undefined>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMsg, setLoadingMsg] = useState("Generating your plan...");
@@ -133,13 +128,13 @@ const CreateDietPlanPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lbs">("kg");
+  const [prefLoading, setPrefLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
       dietType: "vegetarian",
-      desiredWeight: 70, // Set a valid default to pass validation
       intolerancesAndAllergies: "",
       excludedFoods: "",
       numberOfMeals: 3,
@@ -147,6 +142,40 @@ const CreateDietPlanPage = () => {
       notes: "",
     },
   });
+
+  // Fetch preferences if mode=update
+  useEffect(() => {
+    if (mode === "update") {
+      setPrefLoading(true);
+      api
+        .get("/diet/get-diet-preferences")
+        .then((res) => {
+          const {
+            dietType,
+            numberOfMeals,
+            optionsPerMeal,
+            intolerancesAndAllergies,
+            excludedFoods,
+            notes,
+          } = res.data?.data || {};
+          if (dietType) {
+            form.reset({
+              dietType: dietType,
+              intolerancesAndAllergies: intolerancesAndAllergies || "",
+              excludedFoods: excludedFoods || "",
+              numberOfMeals: numberOfMeals || 3,
+              numberOfMealOptions: optionsPerMeal || 2,
+              notes: notes || "",
+            });
+          }
+        })
+        .catch(() => {
+          toast.error("Failed to fetch diet preferences");
+        })
+        .finally(() => setPrefLoading(false));
+    }
+    // eslint-disable-next-line
+  }, [mode]);
 
   // Progress bar percent
   const progress = ((step + 1) / steps.length) * 100;
@@ -211,7 +240,7 @@ const CreateDietPlanPage = () => {
     }
   };
 
-  if (!user) return <Loader />;
+  if (!user || prefLoading) return <Loader />;
 
   // --- Step Content Renderers ---
   const renderStep = () => {
@@ -277,39 +306,6 @@ const CreateDietPlanPage = () => {
                       );
                     })}
                   </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        );
-
-      case "desiredWeight":
-        return (
-          <FormField
-            control={form.control}
-            name="desiredWeight"
-            render={({ field }) => (
-              <FormItem className="flex flex-col gap-6 w-full">
-                <FormLabel>
-                  <h2 className="text-2xl mx-auto font-bold text-gray-900 text-center mb-2">
-                    {current.label}
-                  </h2>
-                </FormLabel>
-                <p className="text-gray-500 text-center mb-4">
-                  {current.description}
-                </p>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="Enter your target weight"
-                    className="w-full text-base border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-0"
-                    value={field.value}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      field.onChange(val === "" ? "" : Number(val));
-                    }}
-                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

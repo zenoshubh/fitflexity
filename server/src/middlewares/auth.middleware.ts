@@ -39,7 +39,6 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
                 lastUpdatedWeightInKgs: users.lastUpdatedWeightInKgs,
                 targetWeightInKgs: users.targetWeightInKgs,
                 heightInCms: users.heightInCms,
-                bodyFatPercentage: users.bodyFatPercentage,
                 activityLevel: users.activityLevel,
                 goal: users.goal,
                 updateRequired: users.updateRequired,

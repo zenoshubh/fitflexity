@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { llm } from "@/lib/LLMconfig";
 import { initialiseVectorStore } from "@/lib/vectorStore";
 import type { Document } from "@langchain/core/documents";
+import { duration } from "drizzle-orm/gel-core";
 
 
 const generateWorkoutPlan = asyncHandler(async (req, res) => {
@@ -69,6 +70,8 @@ const generateWorkoutPlan = asyncHandler(async (req, res) => {
             description: `Auto-generated workout plan for ${goal?.replace("_", " ")}.`,
             workoutType,
             numberOfDays,
+            totalDurationMins,
+            experience,
             notes: notes || null,
             plan: planJson,
         }
@@ -120,6 +123,44 @@ const fetchWorkoutPlan = asyncHandler(async (req, res) => {
 
     return res.status(200).json(
         new ApiResponse(200, { plan: workoutPlan[0]?.plan }, "Workout plan fetched successfully")
+    );
+})
+
+const getWorkoutPreferences = asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    if (!user) {
+        throw new ApiError(401, "User not authenticated");
+    }
+
+    const userId = user.id;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const workoutPlan = await db.select({
+        workoutType: workouts.workoutType,
+        numberOfDays: workouts.numberOfDays,
+        experience: workouts.experience,
+        totalDurationMins: workouts.totalDurationMins,
+        notes: workouts.notes,
+    }).from(workouts).where(eq(workouts.userId, userId));
+
+    if (workoutPlan.length === 0 || !workoutPlan[0]) {
+        return res.status(200).json(
+            new ApiResponse(200, { plan: null }, "No workout plan found for the user")
+        );
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            workoutType: workoutPlan[0].workoutType,
+            numberOfDays: workoutPlan[0].numberOfDays,
+            experience: workoutPlan[0].experience,
+            totalDurationMins: workoutPlan[0].totalDurationMins,
+            notes: workoutPlan[0].notes
+        }, "Workout preferences fetched successfully")
     );
 })
 
@@ -205,6 +246,98 @@ ${updateInstruction}
     );
 });
 
+const updateWorkoutPlan = asyncHandler(async (req, res) => {
+
+    const { workoutType,
+        numberOfDays,
+        totalDurationMins,
+        experience,
+        notes } = req.body;
+
+    const user = req.user;
+
+    if (!user) {
+        throw new ApiError(401, "User not authenticated");
+    }
+
+    await managePlanEmbeddingsQueue.add("delete-workout-plan", {
+        userId: user.id,
+        planType: "workout",
+    });
+
+    const goal = user.goal || "maintain_weight";
+
+
+    const { gender, heightInCms, currentWeightInKgs, activityLevel, dateOfBirth } = user;
+    let planJson: any;
+    try {
+        const workoutPlan = await generateWorkoutPlanWithLLM(
+            { gender, heightInCms, currentWeightInKgs, activityLevel, dateOfBirth, workoutType, goal, numberOfDays, totalDurationMins, notes }
+        );
+
+        if (!workoutPlan) {
+            throw new ApiError(500, "Failed to generate workout plan");
+        }
+
+        // Convert the AI response to string
+        const workoutPlanText = typeof workoutPlan === 'string'
+            ? workoutPlan
+            : Array.isArray(workoutPlan)
+                ? JSON.stringify(workoutPlan)
+                : String(workoutPlan);
+
+
+        // Try to extract JSON from the response (in case model adds extra text)
+        const jsonMatch = workoutPlanText.match(/\[.*\]/s);
+        const jsonString = jsonMatch ? jsonMatch[0] : workoutPlanText;
+
+        if (!jsonString) {
+            throw new ApiError(500, "Failed to parse workout plan response");
+        }
+
+        planJson = JSON.parse(jsonString);
+
+
+        const newWorkout: NewWorkout = {
+            userId: user.id,
+            name: `${goal.replace("_", " ")} Workout Plan`,
+            description: `Auto-generated workout plan for ${goal.replace("_", " ")}.`,
+            workoutType,
+            totalDurationMins,
+            experience,
+            notes: notes || null,
+            plan: planJson,
+        };
+
+        // --- Save to DB ---
+        const savedWorkout = await db
+            .update(workouts)
+            .set(newWorkout)
+            .where(eq(workouts.userId, user.id))
+            .returning();
+
+        if (!savedWorkout || savedWorkout.length === 0) {
+            throw new ApiError(500, "Failed to save workout plan");
+        }
+
+        // Respond to user immediately
+        res.status(200).json(
+            new ApiResponse(200, { plan: planJson }, "Workout plan updated and saved successfully")
+        );
+
+        await managePlanEmbeddingsQueue.add("embed-workout-plan", {
+            planJson,
+            userId: user.id,
+            goal: goal,
+            planType: "workout",
+        });
+
+        return;
+
+    } catch (error) {
+        throw new ApiError(500, "Failed to generate or parse workout plan");
+    }
+})
 
 const chatWorkoutPlan = asyncHandler(async (req, res) => {
     const user = req.user;
@@ -314,4 +447,14 @@ const deleteWorkoutPlan = asyncHandler(async (req, res) => {
     });
 })
 
-export { generateWorkoutPlan, fetchWorkoutPlan, editWorkoutPlan, chatWorkoutPlan, deleteWorkoutPlan };
+
+
+export {
+    generateWorkoutPlan,
+    fetchWorkoutPlan,
+    getWorkoutPreferences,
+    editWorkoutPlan,
+    updateWorkoutPlan,
+    chatWorkoutPlan,
+    deleteWorkoutPlan
+};

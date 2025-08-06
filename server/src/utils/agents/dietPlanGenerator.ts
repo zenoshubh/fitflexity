@@ -54,7 +54,7 @@ const goalMap: Record<string, { weeklyChange: number, type: "fat" | "muscle" }> 
 
 
 export async function generateDietPlanWithLLM(dietPreferences: any) {
-    const { weightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
+    const { currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
 
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : 30; // Default age of 30 if not provided
 
@@ -70,7 +70,7 @@ export async function generateDietPlanWithLLM(dietPreferences: any) {
     type ActivityLevel = keyof typeof activityLevelMap;
     const activityMultiplier = activityLevelMap[activityLevel as ActivityLevel] || 1.2;
 
-    const bmr = BMRcalculator(weightInKgs, heightInCms, age as number, gender);
+    const bmr = BMRcalculator(currentWeightInKgs, heightInCms, age as number, gender);
     const tdee = TDEEcalculator(bmr, activityMultiplier);
 
     // --- New goal logic ---

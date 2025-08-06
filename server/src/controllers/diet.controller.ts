@@ -30,7 +30,7 @@ const generateDietPlan = asyncHandler(async (req, res) => {
     try {
         const { generatedDietPlan, dailyCalorieIntake, dailyProteinIntake } = await generateDietPlanWithLLM(
 
-            {goal, currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
+            { goal, currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
         );
 
         if (!generatedDietPlan) {
@@ -380,34 +380,12 @@ const updateDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(401, "User not authenticated");
     }
 
-    const userDetails: {
-        weightInKgs: string | null;
-        targetWeightInKgs: string | null;
-        heightInCms: string | null;
-        dateOfBirth: string | null;
-        gender: "male" | "female" | "other" | null;
-        activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "super_active" | null;
-    }[] =
-        await db.select({
-            weightInKgs: users.currentWeightInKgs,
-            targetWeightInKgs: users.targetWeightInKgs,
-            heightInCms: users.heightInCms,
-            dateOfBirth: users.dateOfBirth,
-            gender: users.gender,
-            activityLevel: users.activityLevel
-        }).from(users)
-            .where(eq(users.id, user.id))
-
-    if (userDetails.length === 0 || !userDetails[0]) {
-        throw new ApiError(404, "User details not found");
-    }
-
     await managePlanEmbeddingsQueue.add("delete-diet-plan", {
         userId: user.id,
         planType: "diet",
     });
 
-    const goal = user.goal || "maintain_weight";
+    const { currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, goal, activityLevel, gender } = user;
 
     const dietPreferences = await db.select({
         dietType: diets.dietType,
@@ -428,8 +406,7 @@ const updateDietPlan = asyncHandler(async (req, res) => {
     let planJson: any;
     try {
         const { generatedDietPlan, dailyCalorieIntake, dailyProteinIntake } = await generateDietPlanWithLLM(
-
-            { dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
+            { currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
         );
 
         if (!generatedDietPlan) {
@@ -455,19 +432,13 @@ const updateDietPlan = asyncHandler(async (req, res) => {
         planJson = JSON.parse(jsonString);
 
 
-        const newDiet: NewDiet = {
-            userId: user.id,
-            name: `${goal.replace("_", " ")} Diet Plan`,
-            description: `Auto-generated diet plan for ${goal.replace("_", " ")}.`,
-            dietType,
-            intolerancesAndAllergies: intolerancesAndAllergies || null,
-            excludedFoods: excludedFoods || null,
-            numberOfMeals,
-            optionsPerMeal: numberOfMealOptions,
-            notes: notes || null,
+        const newDiet: Partial<NewDiet> = {
+            name: `${goal?.replace("_", " ")} Diet Plan`,
+            description: `Auto-generated diet plan for ${goal?.replace("_", " ")}.`,
             plan: planJson,
             totalProtein: dailyProteinIntake,
             totalCalories: dailyCalorieIntake,
+            updatedAt: new Date(),
         };
 
         // --- Save to DB ---

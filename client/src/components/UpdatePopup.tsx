@@ -1,18 +1,25 @@
 import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 const activityLevels = [
-  "Sedentary",
-  "Lightly Active",
-  "Moderately Active",
-  "Very Active",
+  "sedentary",
+  "lightly_active",
+  "moderately_active",
+  "very_active",
+  "super_active",
 ];
 
 const goals = [
-  "Lose Weight",
-  "Maintain Weight",
-  "Gain Weight",
+  "maintain_weight",
+  "mild_weight_loss_0_25kg_per_week",
+  "weight_loss_0_5kg_per_week",
+  "extreme_weight_loss_1kg_per_week",
+  "mild_weight_gain_0_25kg_per_week",
+  "weight_gain_0_5kg_per_week",
+  "extreme_weight_gain_1kg_per_week",
 ];
 
 const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
@@ -20,16 +27,38 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
   const [activityLevel, setActivityLevel] = useState("");
   const [goal, setGoal] = useState("");
   const [planOption, setPlanOption] = useState("");
+  const [resetPref, setResetPref] = useState(""); // new state for step 3
 
   // Dummy API call
   const handleProfileUpdate = async () => {
-    // Replace with your actual API call
-    // await api.post("/update-profile", { activityLevel, goal });
-    setStep(2);
+    try {
+      const res = await api.put("/users/update-profile", {
+        activityLevel,
+        goal,
+      });
+      const { status, message } = res.data;
+      if (status === 200) {
+        toast.success(message || "Profile updated successfully!");
+        setStep(2);
+      } else {
+        toast.error(message || "Failed to update profile.");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Something went wrong.");
+    }
   };
 
   const handlePlanUpdate = () => {
-    // Handle plan update logic here
+    if (planOption === "none") {
+      onClose();
+    } else {
+      setStep(3);
+    }
+  };
+
+  const handleFinish = () => {
+    // Here you can handle the final submission logic
+    // e.g. send {activityLevel, goal, planOption, resetPref} to API
     onClose();
   };
 
@@ -121,6 +150,97 @@ const UpdatePopup = ({ onClose }: { onClose: () => void }) => {
               <Button
                 onClick={handlePlanUpdate}
                 disabled={!planOption}
+              >
+                Next
+              </Button>
+            </div>
+          </>
+        )}
+
+        {step === 3 && (
+          <>
+            <DialogHeader>
+              <DialogTitle>
+                {planOption === "diet" && "Diet Plan Preferences"}
+                {planOption === "workout" && "Workout Plan Preferences"}
+                {planOption === "both" && "Reset Preferences for Plans"}
+              </DialogTitle>
+              <DialogDescription>
+                {planOption === "diet" &&
+                  "Do you want to keep your current diet preferences or reset them for the new plan?"}
+                {planOption === "workout" &&
+                  "Do you want to keep your current workout preferences or reset them for the new plan?"}
+                {planOption === "both" &&
+                  "Choose which preferences you want to reset for your new plans."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 mb-4 mt-2">
+              {planOption === "diet" && (
+                <>
+                  <Button
+                    variant={resetPref === "keep-diet" ? "default" : "outline"}
+                    onClick={() => setResetPref("keep-diet")}
+                  >
+                    Keep current diet preferences
+                  </Button>
+                  <Button
+                    variant={resetPref === "reset-diet" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-diet")}
+                  >
+                    Reset diet preferences
+                  </Button>
+                </>
+              )}
+              {planOption === "workout" && (
+                <>
+                  <Button
+                    variant={resetPref === "keep-workout" ? "default" : "outline"}
+                    onClick={() => setResetPref("keep-workout")}
+                  >
+                    Keep current workout preferences
+                  </Button>
+                  <Button
+                    variant={resetPref === "reset-workout" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-workout")}
+                  >
+                    Reset workout preferences
+                  </Button>
+                </>
+              )}
+              {planOption === "both" && (
+                <>
+                  <Button
+                    variant={resetPref === "reset-diet" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-diet")}
+                  >
+                    Reset preferences for diet only
+                  </Button>
+                  <Button
+                    variant={resetPref === "reset-workout" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-workout")}
+                  >
+                    Reset preferences for workout only
+                  </Button>
+                  <Button
+                    variant={resetPref === "reset-both" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-both")}
+                  >
+                    Reset preferences for both
+                  </Button>
+                  <Button
+                    variant={resetPref === "reset-none" ? "default" : "outline"}
+                    onClick={() => setResetPref("reset-none")}
+                  >
+                    Keep current preferences for both
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button
+                onClick={handleFinish}
+                disabled={!resetPref}
               >
                 Finish
               </Button>

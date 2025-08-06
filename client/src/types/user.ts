@@ -3,6 +3,9 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
+  gender: string;
+  activityLevel: string;
+  goal: string;
   currentWeightInKgs: number;
   targetWeightInKgs: number;
   lastUpdatedWeightInKgs: number;

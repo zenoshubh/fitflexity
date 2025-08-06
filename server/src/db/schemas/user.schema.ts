@@ -2,13 +2,6 @@ import { pgTable, uuid, varchar, timestamp, date, boolean, decimal, pgEnum } fro
 
 export const userActivityLevelEnum = pgEnum('activity_level', ["sedentary", "lightly_active", "moderately_active", "very_active", "super_active"]);
 
-export const userBodyFatEnum = pgEnum('body_fat_percentage', [
-    "less_than_10",
-    "between_11_and_18",
-    "between_19_and_25",
-    "more_than_26"
-]);
-
 export const goalEnum = pgEnum('goal', [
   "maintain_weight",
   "mild_weight_loss_0_25kg_per_week",
@@ -33,7 +26,6 @@ export const users = pgTable('users', {
     targetWeightInKgs: decimal('target_weight', { precision: 5, scale: 2 }),
     lastUpdatedWeightInKgs: decimal('last_updated_weight', { precision: 5, scale: 2 }),
     heightInCms: decimal('height', { precision: 5, scale: 2 }),
-    bodyFatPercentage: userBodyFatEnum('body_fat_percentage'),
     activityLevel: userActivityLevelEnum('activity_level'),
     goal: goalEnum('goal'),
     updateRequired : boolean('update_required').default(false).notNull(),

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import api from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => void }) => {
   const [weightLogs, setWeightLogs] = useState<
@@ -15,6 +16,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
   const [progressNotification, setProgressNotification] = useState<
     string | null
   >(null);
+  const { refetch } = useAuth();
 
   const fetchLogs = async () => {
     setWeightLogsLoading(true);
@@ -62,6 +64,9 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
       if (onWeightLogged) {
         onWeightLogged(parseFloat(newWeight));
       }
+
+      // Refetch user data so UserSummaryCard updates automatically
+      if (refetch) refetch();
     } catch {
       alert("Failed to log weight");
     } finally {
@@ -77,12 +82,12 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
   };
 
   return (
-    <div className="w-full max-w-3xl mb-10">
+    <div className="w-full max-w-5xl mx-auto mb-6">
       {/* Progress Notification */}
       {progressNotification && (
         <div
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-orange-100 border border-orange-400 rounded-xl shadow-lg px-6 py-4 flex flex-col md:flex-row items-center gap-4"
-          style={{ maxWidth: "80vw", width: "60vw" }}
+          style={{ maxWidth: "90vw", width: "100%" }}
         >
           <div className="flex-1 text-orange-700 font-medium text-sm whitespace-normal">
             {progressNotification}
@@ -104,7 +109,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
         </div>
       )}
       <h2 className="text-2xl font-bold text-gray-800 mb-4 ml-2">Weight Log</h2>
-      <div className="bg-white/70 border border-gray-200 rounded-3xl shadow-2xl p-6 glassmorphism flex flex-col gap-6">
+      <div className="bg-white/80 border border-gray-200 rounded-3xl shadow-2xl p-6 glassmorphism flex flex-col gap-6">
         {/* Log new weight */}
         <form
           onSubmit={handleLogWeight}
@@ -144,7 +149,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full text-left">
+              <table className="min-w-full text-left rounded-xl overflow-hidden bg-white">
                 <thead>
                   <tr>
                     <th className="px-4 py-2 text-gray-700 font-semibold">

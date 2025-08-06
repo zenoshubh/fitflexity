@@ -248,12 +248,6 @@ ${updateInstruction}
 
 const updateWorkoutPlan = asyncHandler(async (req, res) => {
 
-    const { workoutType,
-        numberOfDays,
-        totalDurationMins,
-        experience,
-        notes } = req.body;
-
     const user = req.user;
 
     if (!user) {
@@ -265,14 +259,32 @@ const updateWorkoutPlan = asyncHandler(async (req, res) => {
         planType: "workout",
     });
 
-    const goal = user.goal || "maintain_weight";
+    const { currentWeightInKgs, heightInCms, dateOfBirth, goal, activityLevel, gender } = user;
 
+    const workoutPreferences = await db.select({
+        workoutType: workouts.workoutType,
+        numberOfDays: workouts.numberOfDays,
+        totalDurationMins: workouts.totalDurationMins,
+        experience: workouts.experience,
+        notes: workouts.notes
+    }).from(workouts).where(eq(workouts.userId, user.id));
 
-    const { gender, heightInCms, currentWeightInKgs, activityLevel, dateOfBirth } = user;
     let planJson: any;
     try {
         const workoutPlan = await generateWorkoutPlanWithLLM(
-            { gender, heightInCms, currentWeightInKgs, activityLevel, dateOfBirth, workoutType, goal, numberOfDays, totalDurationMins, notes }
+            {
+                gender,
+                heightInCms,
+                currentWeightInKgs,
+                activityLevel,
+                dateOfBirth,
+                workoutType: workoutPreferences[0]?.workoutType || "full_body",
+                goal,
+                numberOfDays: workoutPreferences[0]?.numberOfDays || 3,
+                totalDurationMins: workoutPreferences[0]?.totalDurationMins || 60,
+                experience: workoutPreferences[0]?.experience || "beginner",
+                notes: workoutPreferences[0]?.notes || ""
+            }
         );
 
         if (!workoutPlan) {
@@ -298,15 +310,11 @@ const updateWorkoutPlan = asyncHandler(async (req, res) => {
         planJson = JSON.parse(jsonString);
 
 
-        const newWorkout: NewWorkout = {
-            userId: user.id,
-            name: `${goal.replace("_", " ")} Workout Plan`,
-            description: `Auto-generated workout plan for ${goal.replace("_", " ")}.`,
-            workoutType,
-            totalDurationMins,
-            experience,
-            notes: notes || null,
+        const newWorkout: Partial<NewWorkout> = {
+            name: `${goal?.replace("_", " ")} Workout Plan`,
+            description: `Auto-generated workout plan for ${goal?.replace("_", " ")}.`,
             plan: planJson,
+            updatedAt: new Date(),
         };
 
         // --- Save to DB ---
@@ -314,7 +322,7 @@ const updateWorkoutPlan = asyncHandler(async (req, res) => {
             .update(workouts)
             .set(newWorkout)
             .where(eq(workouts.userId, user.id))
-            .returning();
+            .returning({ id: workouts.id });
 
         if (!savedWorkout || savedWorkout.length === 0) {
             throw new ApiError(500, "Failed to save workout plan");
@@ -446,8 +454,6 @@ const deleteWorkoutPlan = asyncHandler(async (req, res) => {
         planType: "workout",
     });
 })
-
-
 
 export {
     generateWorkoutPlan,

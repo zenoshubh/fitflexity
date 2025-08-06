@@ -6,6 +6,7 @@ import { users, type NewUser } from "@/db/schemas/user.schema";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
+import { date } from "drizzle-orm/mysql-core";
 
 // Helper function to generate access and refresh tokens
 const generateTokens = (userId: string) => {
@@ -208,13 +209,13 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 });
 
 const completeProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, gender, weightInKgs, targetWeightInKgs, heightInCms, bodyFatPercentage, activityLevel, goal } = req.body;
+    const { dateOfBirth, gender, weightInKgs, targetWeightInKgs, heightInCms, activityLevel, goal } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel || !goal || !targetWeightInKgs) {
+    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !activityLevel || !goal || !targetWeightInKgs) {
         throw new ApiError(400, "All fields are required to complete the profile");
     }
 
@@ -229,7 +230,6 @@ const completeProfile = asyncHandler(async (req, res) => {
             lastUpdatedWeightInKgs: weightInKgs,
             targetWeightInKgs,
             heightInCms,
-            bodyFatPercentage,
             activityLevel,
             goal,
             isProfileComplete: true
@@ -251,6 +251,41 @@ const completeProfile = asyncHandler(async (req, res) => {
     }
 
     return res.status(200).json(new ApiResponse(200, {}, "Profile completed successfully"));
+})
+
+const updateProfile = asyncHandler(async (req, res) => {
+    const { dateOfBirth, gender, heightInCms, activityLevel, goal } = req.body;
+
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized request");
+    }
+
+    // Only require at least one of activityLevel or goal for partial update
+    if (!activityLevel && !goal && !dateOfBirth && !gender && !heightInCms) {
+        throw new ApiError(400, "At least one field is required to update");
+    }
+
+    const updateData: Record<string, any> = {};
+    if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+    if (gender) updateData.gender = gender;
+    if (heightInCms) updateData.heightInCms = heightInCms;
+    if (activityLevel) updateData.activityLevel = activityLevel;
+    if (goal) updateData.goal = goal;
+
+    // Update user profile
+    const updatedUser = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, req.user.id))
+        .returning({
+            id: users.id,
+        });
+
+    if (!updatedUser[0]) {
+        throw new ApiError(500, "Failed to update user profile");
+    }
+
+    return res.status(200).json(new ApiResponse(200, {}, "Profile updated successfully"));
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
@@ -348,4 +383,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
-export { initiateGoogleAuth, authenticateUserWithGoogle, completeProfile, getCurrentUser, logoutUser, refreshAccessToken };
+export {
+    initiateGoogleAuth,
+    authenticateUserWithGoogle,
+    completeProfile,
+    updateProfile,
+    getCurrentUser,
+    logoutUser,
+    refreshAccessToken
+};

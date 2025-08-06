@@ -53,9 +53,8 @@ const goalMap: Record<string, { weeklyChange: number, type: "fat" | "muscle" }> 
 };
 
 
-export async function generateDietPlanWithLLM(userDetails: any, dietPreferences: any) {
-    const { weightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, bodyFatPercentage, activityLevel, gender } = userDetails;
-    const { dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
+export async function generateDietPlanWithLLM(dietPreferences: any) {
+    const { weightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences;
 
     const age = dateOfBirth ? new Date().getFullYear() - new Date(dateOfBirth).getFullYear() : 30; // Default age of 30 if not provided
 
@@ -132,6 +131,10 @@ export async function generateDietPlanWithLLM(userDetails: any, dietPreferences:
     - Do NOT include any extra text, explanation, or markdown. Only output the JSON array as shown above.
     `;
     const result = await llm.invoke(PROMPT);
+
+    console.log(`dailyProteinIntake: ${1.5 * targetWeightInKgs}, dailyCalorieIntake: ${dailyCalorieIntake}`);
+
+
     return {
         generatedDietPlan: result.content,
         dailyCalorieIntake: dailyCalorieIntake,

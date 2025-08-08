@@ -184,14 +184,20 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="dateOfBirth"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Date of Birth
                     </h2>
                   </FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <div className="max-w-[220px] mx-auto">
+                      <Input
+                        type="date"
+                        {...field}
+                        className="w-full rounded-full border border-orange-200 bg-orange-50 text-orange-500 font-semibold px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 placeholder:text-orange-300"
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -201,26 +207,31 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="gender"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Gender
                     </h2>
                   </FormLabel>
                   <FormControl>
-                    <RadioGroup
-                      className="flex gap-4 justify-center"
-                      defaultValue={field.value}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <RadioGroupItem value="male" id="gender-male" />
-                      <Label htmlFor="gender-male">Male</Label>
-                      <RadioGroupItem value="female" id="gender-female" />
-                      <Label htmlFor="gender-female">Female</Label>
-                      <RadioGroupItem value="other" id="gender-other" />
-                      <Label htmlFor="gender-other">Other</Label>
-                    </RadioGroup>
+                    <div className="flex gap-4 justify-center">
+                      {["male", "female", "other"].map((g) => (
+                        <button
+                          key={g}
+                          type="button"
+                          className={`px-6 py-2 rounded-full border font-semibold transition-colors
+                ${
+                  field.value === g
+                    ? "bg-orange-500 text-white border-orange-500 shadow"
+                    : "bg-orange-50 text-orange-500 border-orange-200 hover:bg-orange-100"
+                }
+              `}
+                          onClick={() => field.onChange(g)}
+                        >
+                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -235,7 +246,7 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="weightInKgs"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Current Weight (kg)
@@ -262,7 +273,7 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="targetWeightInKgs"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Target Weight (kg)
@@ -289,7 +300,7 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="heightInCms"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Height (cm)
@@ -321,7 +332,7 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="activityLevel"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Activity Level
@@ -355,7 +366,7 @@ const CompleteProfilePage = () => {
               control={form.control}
               name="goal"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full max-w-md mx-auto">
                   <FormLabel>
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-2">
                       Goal
@@ -406,7 +417,7 @@ const CompleteProfilePage = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col relative bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#f7f7f9]"
+      className="min-h-screen flex flex-col relative bg-[#fffefc]"
     >
       <main
         className="flex-1 flex flex-col justify-center"

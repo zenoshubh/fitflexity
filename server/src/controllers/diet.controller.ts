@@ -380,6 +380,10 @@ const updateDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(401, "User not authenticated");
     }
 
+    if (user.updateRequired === false) {
+        throw new ApiError(400, "User update is not required");
+    }
+
     await managePlanEmbeddingsQueue.add("delete-diet-plan", {
         userId: user.id,
         planType: "diet",

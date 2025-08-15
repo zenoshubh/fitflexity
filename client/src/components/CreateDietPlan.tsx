@@ -165,13 +165,6 @@ const CreateDietPlanPage = () => {
     }
   }, [mode]);
 
-  // Redirect if diet plan exists and not updating
-  useEffect(() => {
-    if (user?.hasDietPlan && mode !== "update") {
-      router.replace("/diet/view-diet-plan");
-    }
-  }, [user, mode, router]);
-
   // Progress bar percent
   const progress = ((step + 1) / steps.length) * 100;
 

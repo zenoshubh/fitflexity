@@ -34,12 +34,6 @@ const ViewDietPlanPage = () => {
   const router = useRouter();
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user && user.hasDietPlan === false) {
-      router.replace("/diet/create-diet-plan");
-    }
-  }, [user, router]);
-
   const [dietPlan, setDietPlan] = useState<any[] | undefined>([]);
   const [chatResponse, setChatResponse] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);

@@ -187,7 +187,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         if (userData.isProfileComplete) {
             return res.redirect(`${process.env.CLIENT_URL}/user/dashboard`);
         } else {
-            return res.redirect(`${process.env.CLIENT_URL}/user/complete-profile`);
+            return res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
         }
     } catch (err: any) {
         console.error("Google signup error details:", {

@@ -16,7 +16,7 @@ const withAuth = <P extends object>(WrappedComponent: FC<P>): FC<P> => {
       }
 
       if (!user?.isProfileComplete && isAuthenticated) {
-        router.replace("/user/complete-profile");
+        router.replace("/complete-profile");
       }
     }, [loading, isAuthenticated, router]);
 

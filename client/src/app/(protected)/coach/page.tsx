@@ -135,7 +135,7 @@ const CoachChatPage = () => {
         )}
       </div>
       {/* Input area fixed at bottom */}
-      <div className="border-t border-orange-100 bg-white/80 px-8 py-4 w-full">
+      <div className="border-t border-orange-100 bg-white/80 px-8 py-4 w-full sticky bottom-0 z-10">
         <div className="relative w-full flex items-center">
           <textarea
             rows={2}

@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import Footer from "@/components/Footer";
-import HomeNavbar from "@/components/HomeNavbar";
-import HeroSection from "@/components/HeroSection";
+import Footer from "@/components/LandingPage/Footer";
+import HomeNavbar from "@/components/LandingPage/HomeNavbar";
+import HeroSection from "@/components/LandingPage/HeroSection";
 
 const Home = () => {
   return (

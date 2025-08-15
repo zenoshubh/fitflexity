@@ -3,8 +3,8 @@
 import withAuth from "@/components/withAuth";
 import { useAuth } from "@/hooks/useAuth";
 import React from "react";
-import ViewDietPlanPage from "@/components/ViewDietPlan";
-import CreateDietPlanPage from "@/components/CreateDietPlan";
+import ViewDietPlanPage from "@/components/DietPages/ViewDietPlan";
+import CreateDietPlanPage from "@/components/DietPages/CreateDietPlan";
 import { useSearchParams } from "next/navigation";
 
 const DietPage = () => {

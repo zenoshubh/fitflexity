@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
 import { Edit3, Send, Dumbbell } from "lucide-react";
+import withAuth from "./withAuth";
 
 type ChatFormValues = {
   chatQuery: string;
@@ -384,5 +385,5 @@ const ViewWorkoutPlanPage = () => {
   );
 };
 
-export default ViewWorkoutPlanPage;
+export default withAuth(ViewWorkoutPlanPage);
 

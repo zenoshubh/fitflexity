@@ -75,17 +75,11 @@ const formSchema = z.object({
     .string()
     .min(1, { message: "Date of birth is required." })
     .refine((dob) => {
-      // Validate DD-MM-YYYY format
-      const regex = /^(\d{2})-(\d{2})-(\d{4})$/;
+      // Validate YYYY-MM-DD format (native date input)
+      const regex = /^\d{4}-\d{2}-\d{2}$/;
       if (!regex.test(dob)) return false;
-      const [day, month, year] = dob.split("-").map(Number);
-      const birthDate = new Date(year, month - 1, day);
-      if (
-        birthDate.getFullYear() !== year ||
-        birthDate.getMonth() !== month - 1 ||
-        birthDate.getDate() !== day
-      )
-        return false; // Invalid date
+      const birthDate = new Date(dob);
+      if (isNaN(birthDate.getTime())) return false;
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const m = today.getMonth() - birthDate.getMonth();
@@ -93,7 +87,7 @@ const formSchema = z.object({
         age--;
       }
       return age >= 12 && age <= 65;
-    }, { message: "Enter a valid date in DD-MM-YYYY format (age 12-65)." }),
+    }, { message: "Enter a valid date (age 12-65)." }),
   gender: genderEnum,
   weightInKgs: z
     .number()
@@ -314,13 +308,9 @@ const CompleteProfilePage = () => {
                     <FormControl>
                       <div className="max-w-[260px] mx-auto">
                         <Input
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="off"
+                          type="date"
                           {...field}
-                          placeholder="DD-MM-YYYY"
                           className="w-full rounded-full border border-orange-200 bg-orange-50 text-orange-500 font-semibold px-6 py-3 text-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 placeholder:text-orange-300 tracking-widest"
-                          maxLength={10}
                         />
                       </div>
                     </FormControl>

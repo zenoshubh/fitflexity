@@ -262,7 +262,9 @@ const CreateDietPlanPage = () => {
         setDietPlan(data.plan);
         toast.success(message);
         if (searchParams?.get("redirect") === "workout") {
-          router.push("/workout/create-workout-plan?mode=update");
+          router.push("/workout?mode=update");
+        } else {
+          window.location.reload();
         }
       } else {
         setDietPlan(undefined);

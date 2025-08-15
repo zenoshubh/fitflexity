@@ -82,7 +82,7 @@ const UpdatePopup = ({
           toast.success("Diet plan updated!");
           onClose();
         } else if (resetPref === "reset-diet") {
-          router.push("/diet/create-diet-plan?mode=update");
+          router.push("/diet?mode=update");
         }
       } else if (planOption === "workout") {
         if (resetPref === "keep-workout") {
@@ -100,14 +100,14 @@ const UpdatePopup = ({
       } else if (planOption === "both") {
         if (resetPref === "reset-diet") {
           router.push(
-            "/diet/create-diet-plan?mode=update&action=newDietPrefAndOldPrefWorkout"
+            "/diet?mode=update&action=newDietPrefAndOldPrefWorkout"
           );
         } else if (resetPref === "reset-workout") {
           router.push(
-            "/workout/create-workout-plan?mode=update&action=newWorkoutPrefAndOldPrefDiet"
+            "/workout?mode=update&action=newWorkoutPrefAndOldPrefDiet"
           );
         } else if (resetPref === "reset-both") {
-          router.push("/diet/create-diet-plan?mode=update&redirect=workout");
+          router.push("/diet?mode=update&redirect=workout");
         } else if (resetPref === "reset-none") {
           await api.put("/diet/update-diet-plan");
           await api.put("/workout/update-workout-plan");

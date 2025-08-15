@@ -39,7 +39,7 @@ const HeroSection = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6 w-full">
           <Link
-            href="/diet/create-diet-plan"
+            href="/diet"
             className="px-5 py-2 sm:px-6 sm:py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base shadow-lg transition w-full sm:w-auto"
           >
             Start for Free

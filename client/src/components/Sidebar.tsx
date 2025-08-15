@@ -14,20 +14,32 @@ import {
   User,
   LogOut,
   LogIn,
+  Bot,
 } from "lucide-react";
 import Image from "next/image";
 import withAuth from "./withAuth";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/diet/create-diet-plan", label: "Create Diet", icon: Salad },
-  { href: "/diet/view-diet-plan", label: "View Diet", icon: ClipboardList },
   {
-    href: "/workout/create-workout-plan",
-    label: "Create Workout",
+    href: "/",
+    label: "Home",
+    icon: Home,
+  },
+  {
+    href: "/diet",
+    label: "Diet",
+    icon: Salad,
+  },
+  {
+    href: "/workout",
+    label: "Workout",
     icon: Dumbbell,
   },
-  { href: "/workout/view-workout-plan", label: "View Workout", icon: FileText },
+  {
+    href: "/coach",
+    label: "Coach",
+    icon: Bot,
+  }
 ];
 
 const Sidebar = () => {
@@ -53,9 +65,7 @@ const Sidebar = () => {
   }, [dropdownOpen]);
 
   return (
-    <aside
-      className="z-30 h-full shrink-0 flex flex-col justify-between items-center shadow-xl bg-[#0a0a0a]"
-    >
+    <aside className="z-30 h-full shrink-0 flex flex-col justify-between items-center shadow-xl bg-[#0a0a0a]">
       {/* Logo */}
       <div className="flex flex-col items-center mt-6 mb-2">
         <div className="w-12 h-12 flex items-center justify-center">

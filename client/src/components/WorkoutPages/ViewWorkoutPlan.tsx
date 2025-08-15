@@ -15,7 +15,7 @@ import { useForm } from "react-hook-form";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
 import { Edit3, Send, Dumbbell } from "lucide-react";
-import withAuth from "./withAuth";
+import withAuth from "@/components/withAuth";
 
 type ChatFormValues = {
   chatQuery: string;

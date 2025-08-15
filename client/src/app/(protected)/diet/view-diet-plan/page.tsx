@@ -23,12 +23,23 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import Markdown from "react-markdown";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 type ChatFormValues = {
   chatQuery: string;
 };
 
 const ViewDietPlanPage = () => {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user && user.hasDietPlan === false) {
+      router.replace("/diet/create-diet-plan");
+    }
+  }, [user, router]);
+
   const [dietPlan, setDietPlan] = useState<any[] | undefined>([]);
   const [chatResponse, setChatResponse] = useState<string | null>(null);
   const [chatLoading, setChatLoading] = useState(false);

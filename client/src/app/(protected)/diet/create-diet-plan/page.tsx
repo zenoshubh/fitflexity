@@ -165,6 +165,13 @@ const CreateDietPlanPage = () => {
     }
   }, [mode]);
 
+  // Redirect if diet plan exists and not updating
+  useEffect(() => {
+    if (user?.hasDietPlan && mode !== "update") {
+      router.replace("/diet/view-diet-plan");
+    }
+  }, [user, mode, router]);
+
   // Progress bar percent
   const progress = ((step + 1) / steps.length) * 100;
 
@@ -595,9 +602,7 @@ const CreateDietPlanPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative bg-[#F7F7F9]">
-      <main
-        className="flex-1 flex flex-col justify-center"
-      >
+      <main className="flex-1 flex flex-col justify-center">
         <section className="w-full px-4 md:px-10 py-10 md:py-16">
           <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-8 tracking-tight text-left">
             Let's build your perfect diet plan

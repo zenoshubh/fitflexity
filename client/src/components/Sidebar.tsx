@@ -16,6 +16,7 @@ import {
   LogIn,
 } from "lucide-react";
 import Image from "next/image";
+import withAuth from "./withAuth";
 
 const NAV_LINKS = [
   { href: "/", label: "Home", icon: Home },
@@ -154,4 +155,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar;
+export default withAuth(Sidebar);

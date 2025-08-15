@@ -15,12 +15,21 @@ const withAuth = <P extends object>(WrappedComponent: FC<P>): FC<P> => {
         router.replace("/");
       }
 
-      if (!user?.isProfileComplete && isAuthenticated) {
+      if (!loading && isAuthenticated && !user?.isProfileComplete) {
         router.replace("/complete-profile");
       }
-    }, [loading, isAuthenticated, router]);
+    }, [loading, isAuthenticated, user, router]);
+
+    // Jab tak loading true hai, kuch bhi render na karo
+    if (loading) {
+      return null; // Ya <Loader /> agar loader dikhana chahte ho
+    }
 
     if (!isAuthenticated) {
+      return null;
+    }
+
+    if (!user?.isProfileComplete && typeof window !== "undefined" && window.location.pathname !== "/complete-profile") {
       return null;
     }
 

@@ -39,13 +39,13 @@ const HeroSection = () => {
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6 w-full">
           <Link
-            href="/diet"
+            href="/user/dashboard"
             className="px-5 py-2 sm:px-6 sm:py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold text-base shadow-lg transition w-full sm:w-auto"
           >
             Start for Free
           </Link>
           <Link
-            href="/workout/create-workout-plan"
+            href="/workout"
             className="px-5 py-2 sm:px-6 sm:py-2 rounded-full bg-white border-2 border-orange-500 text-orange-500 font-semibold text-base shadow-lg hover:bg-orange-50 transition w-full sm:w-auto"
           >
             Explore Features

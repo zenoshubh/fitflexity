@@ -4,6 +4,8 @@ import React from "react";
 import Footer from "@/components/LandingPage/Footer";
 import HomeNavbar from "@/components/LandingPage/HomeNavbar";
 import HeroSection from "@/components/LandingPage/HeroSection";
+import FAQSection from "@/components/LandingPage/FAQSection";
+import FeatureSection from "@/components/LandingPage/FeatureSection";
 
 const Home = () => {
   return (
@@ -12,7 +14,11 @@ const Home = () => {
       <HomeNavbar />
       {/* Hero Section */}
       <HeroSection />
-      {/* Modern Static Footer */}
+      {/* Modern Feature Section */}
+      <FeatureSection />
+      {/* FAQ Section */}
+      <FAQSection />
+      {/* Footer Section */}
       <Footer />
     </div>
   );

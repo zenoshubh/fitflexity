@@ -4,8 +4,8 @@ import withAuth from "@/components/withAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import WeightLog from "@/components/WeightLog";
-import UserSummaryCard from "@/components/UserSummaryCard";
+import WeightLog from "@/components/DashboardPage/WeightLog";
+import UserSummaryCard from "@/components/DashboardPage/UserSummaryCard";
 
 const Dashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -30,7 +30,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center pt-8">
       <UserSummaryCard
         currentWeight={
           typeof currentWeight === "string"
@@ -38,6 +38,7 @@ const Dashboard = () => {
             : currentWeight
         }
       />
+      <div className="h-8" /> {/* Add vertical space between components */}
       <WeightLog onWeightLogged={setCurrentWeight} />
     </div>
   );

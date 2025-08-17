@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -82,7 +82,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto mb-6">
+    <div className="w-full max-w-[95vw] sm:max-w-5xl mx-auto mb-6">
       {/* Progress Notification */}
       {progressNotification && (
         <div
@@ -94,13 +94,13 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
           </div>
           <div className="flex gap-2">
             <button
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-bold text-sm"
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-full font-bold text-sm shadow transition"
               onClick={handleUpdatePlans}
             >
               Yes, Update my plan
             </button>
             <button
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold text-sm"
+              className="bg-white border border-orange-200 hover:bg-orange-50 text-orange-500 px-4 py-2 rounded-full font-bold text-sm shadow transition"
               onClick={() => setProgressNotification(null)}
             >
               Ignore
@@ -108,8 +108,10 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
           </div>
         </div>
       )}
-      <h2 className="text-2xl font-bold text-gray-800 mb-4 ml-2">Weight Log</h2>
-      <div className="bg-white/80 border border-gray-200 rounded-3xl shadow-2xl p-6 glassmorphism flex flex-col gap-6">
+      <div className="bg-[#fffefc] border border-orange-100 rounded-3xl shadow-lg p-6 flex flex-col gap-6">
+        <h2 className="text-2xl font-extrabold text-orange-500 mb-4 ml-2">
+          Weight Log
+        </h2>
         {/* Log new weight */}
         <form
           onSubmit={handleLogWeight}
@@ -120,7 +122,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
             step="0.1"
             min="1"
             max="500"
-            className="border border-gray-300 rounded-xl px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-orange-400 w-full md:w-48 bg-white/80"
+            className="border border-orange-200 rounded-xl px-4 py-2 text-lg focus:outline-none focus:ring-2 focus:ring-orange-400 w-full md:w-48 bg-white"
             placeholder="Enter new weight (kg)"
             value={newWeight}
             onChange={(e) => setNewWeight(e.target.value)}
@@ -129,7 +131,7 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
           />
           <Button
             type="submit"
-            className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold px-6 py-2 rounded-xl shadow transition"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-2 rounded-full shadow transition"
             disabled={loggingWeight}
           >
             {loggingWeight ? "Logging..." : "Log Weight"}
@@ -152,10 +154,10 @@ const WeightLog = ({ onWeightLogged }: { onWeightLogged?: (weight: number) => vo
               <table className="min-w-full text-left rounded-xl overflow-hidden bg-white">
                 <thead>
                   <tr>
-                    <th className="px-4 py-2 text-gray-700 font-semibold">
+                    <th className="px-4 py-2 text-orange-500 font-semibold">
                       Date
                     </th>
-                    <th className="px-4 py-2 text-gray-700 font-semibold">
+                    <th className="px-4 py-2 text-orange-500 font-semibold">
                       Weight (kg)
                     </th>
                   </tr>

@@ -344,20 +344,20 @@ const UpdatePopup = ({
             <div className="flex gap-2 justify-end">
               <Button
                 variant="outline"
-                className="rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition text-sm sm:text-base"
                 onClick={handleCancel}
               >
                 Cancel
               </Button>
               <Button
                 variant="outline"
-                className="rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition text-sm sm:text-base"
                 onClick={() => setStep(2)}
               >
                 Skip
               </Button>
               <Button
-                className="rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition text-sm sm:text-base"
                 onClick={handleProfileUpdate}
                 disabled={!activityLevel || !goal}
               >
@@ -400,13 +400,13 @@ const UpdatePopup = ({
             <div className="flex gap-2 justify-end">
               <Button
                 variant="outline"
-                className="rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition text-sm sm:text-base"
                 onClick={handleCancel}
               >
                 Cancel
               </Button>
               <Button
-                className="rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition text-sm sm:text-base"
                 onClick={handlePlanUpdate}
                 disabled={!planOption}
               >
@@ -452,13 +452,13 @@ const UpdatePopup = ({
             <div className="flex gap-2 justify-end">
               <Button
                 variant="outline"
-                className="rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full border-2 border-orange-500 text-orange-500 bg-white hover:bg-orange-50 shadow transition text-sm sm:text-base"
                 onClick={handleCancel}
               >
                 Cancel
               </Button>
               <Button
-                className="rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition"
+                className="w-auto min-w-[90px] sm:min-w-[120px] px-3 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold shadow transition text-sm sm:text-base"
                 onClick={handleFinish}
                 disabled={!resetPref}
               >
@@ -473,4 +473,3 @@ const UpdatePopup = ({
 };
 
 export default UpdatePopup;
-             

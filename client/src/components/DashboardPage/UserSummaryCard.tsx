@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Badge } from "../ui/badge";
 import UpdatePopup from "../UpdatePopup";
 import { Sparkles, Dumbbell, HeartPulse, AlertTriangle } from "lucide-react";
+import Image from "next/image";
 
 const activityLevelLabels: Record<string, string> = {
   sedentary: "Sedentary",
@@ -44,10 +45,21 @@ const UserSummaryCard = ({ currentWeight }: { currentWeight: number }) => {
     >
       {/* Avatar & Welcome */}
       <div className="flex flex-col items-center md:items-start gap-3 flex-1 min-w-[180px]">
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-orange-500 to-orange-700 flex items-center justify-center shadow-lg mb-2 border-4 border-white">
-          <span className="text-3xl sm:text-4xl font-bold text-white">
-            {user?.firstName?.[0] ?? "U"}
-          </span>
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-orange-500 to-orange-700 flex items-center justify-center shadow-lg mb-2 border-4 border-white overflow-hidden">
+          {user?.profileImageUrl ? (
+            <Image
+              src={user.profileImageUrl}
+              alt={user?.firstName ?? "User"}
+              width={80}
+              height={80}
+              className="rounded-full object-cover w-full h-full"
+              priority
+            />
+          ) : (
+            <span className="text-3xl sm:text-4xl font-bold text-white">
+              {user?.firstName?.[0] ?? "U"}
+            </span>
+          )}
         </div>
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 text-center md:text-left leading-tight">
           Welcome back,{" "}

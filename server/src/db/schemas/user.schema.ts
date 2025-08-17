@@ -19,6 +19,7 @@ export const users = pgTable('users', {
     firstName: varchar('first_name', { length: 50 }).notNull(),
     lastName: varchar('last_name', { length: 50 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
+    profileImageUrl: varchar('profile_image_url'),
     dateOfBirth: date('date_of_birth'),
     gender: userGenderEnum('gender'),
     initialWeightInKgs: decimal('initial_weight', { precision: 5, scale: 2 }),

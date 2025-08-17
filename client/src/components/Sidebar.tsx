@@ -126,9 +126,20 @@ const Sidebar = () => {
               onClick={() => setDropdownOpen((v) => !v)}
               aria-label="User menu"
             >
-              <span className="text-[#fffefc] font-bold text-xl">
-                {user?.firstName ? user.firstName[0] : "U"}
-              </span>
+              {user.profileImageUrl ? (
+                <Image
+                  src={user.profileImageUrl}
+                  alt={user.firstName ?? "User"}
+                  width={48}
+                  height={48}
+                  className="rounded-full object-cover w-12 h-12"
+                  priority
+                />
+              ) : (
+                <span className="text-[#fffefc] font-bold text-xl">
+                  {user?.firstName ? user.firstName[0] : "U"}
+                </span>
+              )}
             </button>
             {dropdownOpen && (
               <div className="absolute left-14 bottom-0 ml-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-40 animate-fade-in">

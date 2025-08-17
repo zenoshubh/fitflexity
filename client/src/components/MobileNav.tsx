@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Loader from "./Loader";
+import Image from "next/image";
 
 const NAV_LINKS = [
   {
@@ -118,9 +119,20 @@ function MobileNav() {
                   onClick={() => setDropdownOpen((v) => !v)}
                   aria-label="User menu"
                 >
-                  <span className="text-[#fffefc] font-bold text-sm">
-                    {user?.firstName ? user.firstName[0] : "U"}
-                  </span>
+                  {user.profileImageUrl ? (
+                    <Image
+                      src={user.profileImageUrl}
+                      alt={user.firstName ?? "User"}
+                      width={32}
+                      height={32}
+                      className="rounded-full object-cover w-8 h-8"
+                      priority
+                    />
+                  ) : (
+                    <span className="text-[#fffefc] font-bold text-sm">
+                      {user?.firstName ? user.firstName[0] : "U"}
+                    </span>
+                  )}
                 </button>
                 {dropdownOpen && (
                   <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-40 animate-fade-in">
@@ -160,4 +172,3 @@ function MobileNav() {
 }
 
 export default MobileNav;
-       

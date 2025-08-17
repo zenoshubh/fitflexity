@@ -121,6 +121,15 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 
         if (existingUser.length > 0) {
             userData = existingUser[0]!; // Non-null assertion as we've checked length > 0
+
+            // Check and update Google profile image URL if changed
+            if (user.picture && userData.profileImageUrl !== user.picture) {
+                await db
+                    .update(users)
+                    .set({ profileImageUrl: user.picture })
+                    .where(eq(users.id, userData.id));
+                userData.profileImageUrl = user.picture;
+            }
         } else {
             // Create new user
             const newUser: NewUser = {
@@ -129,6 +138,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                 email: user.email.toLowerCase(),
                 isProfileComplete: false, // Default to false, can be updated later
                 googleId: user.id,
+                profileImageUrl: user.picture || null,
             };
 
             const createdUser = await db
@@ -142,6 +152,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                     dateOfBirth: users.dateOfBirth,
                     isProfileComplete: users.isProfileComplete,
                     googleId: users.googleId,
+                    profileImageUrl: users.profileImageUrl,
                     refreshToken: users.refreshToken,
                     createdAt: users.createdAt,
                     updatedAt: users.updatedAt,

@@ -21,7 +21,7 @@ import withAuth from "./withAuth";
 
 const NAV_LINKS = [
   {
-    href: "/",
+    href: "/user/dashboard",
     label: "Home",
     icon: Home,
   },
@@ -39,7 +39,7 @@ const NAV_LINKS = [
     href: "/coach",
     label: "Coach",
     icon: Bot,
-  }
+  },
 ];
 
 const Sidebar = () => {
@@ -69,13 +69,15 @@ const Sidebar = () => {
       {/* Logo */}
       <div className="flex flex-col items-center mt-6 mb-2">
         <div className="w-12 h-12 flex items-center justify-center">
-          <Image
-            src="/logo.png"
-            alt="Fitflexity Logo"
-            width={40}
-            height={40}
-            priority
-          />
+          <Link href="/">
+            <Image
+              src="/logo.png"
+              alt="Fitflexity Logo"
+              width={40}
+              height={40}
+              priority
+            />
+          </Link>
         </div>
       </div>
       {/* Nav links */}
@@ -132,7 +134,7 @@ const Sidebar = () => {
               <div className="absolute left-14 bottom-0 ml-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-3 z-40 animate-fade-in">
                 <div className="flex flex-col">
                   <Link
-                    href="/user/dashboard"
+                    href="/user/update-profile"
                     className="flex items-center gap-2 px-5 py-2 text-gray-700 hover:bg-orange-50 transition text-left"
                     onClick={() => setDropdownOpen(false)}
                   >

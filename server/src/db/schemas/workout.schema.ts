@@ -10,6 +10,12 @@ export const workoutTypeEnum = pgEnum('workout_type', [
 "bodyweight+cardio",
 ]);
 
+export const experienceLevelEnum = pgEnum('experience_level', [
+"beginner",
+"intermediate",
+"advanced",
+]);
+
 export const workouts = pgTable('workouts', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id).notNull(),
@@ -17,6 +23,7 @@ export const workouts = pgTable('workouts', {
   description: text('description'),
   workoutType: workoutTypeEnum('workout_type').notNull(),
   numberOfDays: integer('number_of_days').notNull().default(3),
+  experience: experienceLevelEnum('experience_level').notNull(),
   notes: text('notes'),
   plan: jsonb('plan').notNull(), // Full workout plan as JSON
   totalDurationMins: integer('total_duration_mins'), // Total duration in minutes (optional)

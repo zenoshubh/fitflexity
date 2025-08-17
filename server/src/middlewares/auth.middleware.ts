@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Request, Response, NextFunction } from "express";
 import db from "@/db";
 import { users } from "@/db/schemas/user.schema";
 import { ApiError } from "@/utils/ApiError";
 import { asyncHandler } from "@/utils/asyncHandler";
+import { diets } from "@/db/schemas/diet.schema";
+import { workouts } from "@/db/schemas/workout.schema";
 
 interface JwtPayload {
     userId: string;
@@ -25,16 +27,30 @@ export const verifyJWT = asyncHandler(async (req: Request, res: Response, next: 
             .select({
                 id: users.id,
                 firstName: users.firstName,
+                lastName: users.lastName,
                 email: users.email,
+                profileImageUrl: users.profileImageUrl,
                 dateOfBirth: users.dateOfBirth,
-                weightInKgs: users.weightInKgs,
-                heightInCms: users.heightInCms,
-                goal: users.goal,
                 gender: users.gender,
-                activityLevel: users.activityLevel,
                 isProfileComplete: users.isProfileComplete,
+                googleId: users.googleId,
+                refreshToken: users.refreshToken,
+                initialWeightInKgs: users.initialWeightInKgs,
+                currentWeightInKgs: users.currentWeightInKgs,
+                lastUpdatedWeightInKgs: users.lastUpdatedWeightInKgs,
+                targetWeightInKgs: users.targetWeightInKgs,
+                heightInCms: users.heightInCms,
+                activityLevel: users.activityLevel,
+                goal: users.goal,
+                updateRequired: users.updateRequired,
+                createdAt: users.createdAt,
+                updatedAt: users.updatedAt,
+                hasDietPlan: sql<boolean>`CASE WHEN ${diets.userId} IS NOT NULL THEN TRUE ELSE FALSE END`,
+                hasWorkoutPlan: sql<boolean>`CASE WHEN ${workouts.userId} IS NOT NULL THEN TRUE ELSE FALSE END`,
             })
             .from(users)
+            .leftJoin(diets, eq(users.id, diets.userId))
+            .leftJoin(workouts, eq(users.id, workouts.userId))
             .where(eq(users.id, decodedToken.userId))
             .limit(1);
 

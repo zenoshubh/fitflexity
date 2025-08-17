@@ -6,6 +6,7 @@ import { users, type NewUser } from "@/db/schemas/user.schema";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiError } from "@/utils/ApiError";
 import { ApiResponse } from "@/utils/ApiResponse";
+import { date } from "drizzle-orm/mysql-core";
 
 // Helper function to generate access and refresh tokens
 const generateTokens = (userId: string) => {
@@ -120,6 +121,15 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 
         if (existingUser.length > 0) {
             userData = existingUser[0]!; // Non-null assertion as we've checked length > 0
+
+            // Check and update Google profile image URL if changed
+            if (user.picture && userData.profileImageUrl !== user.picture) {
+                await db
+                    .update(users)
+                    .set({ profileImageUrl: user.picture })
+                    .where(eq(users.id, userData.id));
+                userData.profileImageUrl = user.picture;
+            }
         } else {
             // Create new user
             const newUser: NewUser = {
@@ -128,6 +138,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                 email: user.email.toLowerCase(),
                 isProfileComplete: false, // Default to false, can be updated later
                 googleId: user.id,
+                profileImageUrl: user.picture || null,
             };
 
             const createdUser = await db
@@ -141,6 +152,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
                     dateOfBirth: users.dateOfBirth,
                     isProfileComplete: users.isProfileComplete,
                     googleId: users.googleId,
+                    profileImageUrl: users.profileImageUrl,
                     refreshToken: users.refreshToken,
                     createdAt: users.createdAt,
                     updatedAt: users.updatedAt,
@@ -186,7 +198,7 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
         if (userData.isProfileComplete) {
             return res.redirect(`${process.env.CLIENT_URL}/user/dashboard`);
         } else {
-            return res.redirect(`${process.env.CLIENT_URL}/user/complete-profile`);
+            return res.redirect(`${process.env.CLIENT_URL}/complete-profile`);
         }
     } catch (err: any) {
         console.error("Google signup error details:", {
@@ -208,13 +220,13 @@ const authenticateUserWithGoogle = asyncHandler(async (req, res) => {
 });
 
 const completeProfile = asyncHandler(async (req, res) => {
-    const { dateOfBirth, gender, weightInKgs, heightInCms, bodyFatPercentage, activityLevel, goal } = req.body;
+    const { dateOfBirth, gender, weightInKgs, targetWeightInKgs, heightInCms, activityLevel, goal } = req.body;
 
     if (!req.user) {
         throw new ApiError(401, "Unauthorized request");
     }
 
-    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !bodyFatPercentage || !activityLevel || !goal) {
+    if (!dateOfBirth || !gender || !weightInKgs || !heightInCms || !activityLevel || !goal || !targetWeightInKgs) {
         throw new ApiError(400, "All fields are required to complete the profile");
     }
 
@@ -224,9 +236,11 @@ const completeProfile = asyncHandler(async (req, res) => {
         .set({
             dateOfBirth,
             gender,
-            weightInKgs,
+            initialWeightInKgs: weightInKgs,
+            currentWeightInKgs: weightInKgs,
+            lastUpdatedWeightInKgs: weightInKgs,
+            targetWeightInKgs,
             heightInCms,
-            bodyFatPercentage,
             activityLevel,
             goal,
             isProfileComplete: true
@@ -247,7 +261,52 @@ const completeProfile = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to update user profile");
     }
 
-    return res.status(200).json(new ApiResponse(200, updatedUser[0], "Profile completed successfully"));
+    return res.status(200).json(new ApiResponse(200, {}, "Profile completed successfully"));
+})
+
+const updateProfile = asyncHandler(async (req, res) => {
+    const { dateOfBirth, gender, heightInCms, activityLevel, goal, lastUpdatedWeightInKgs, updateRequired } = req.body;
+
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized request");
+    }
+
+    // Only require at least one field to update (allow boolean false for updateRequired)
+    if (
+        activityLevel === undefined &&
+        goal === undefined &&
+        dateOfBirth === undefined &&
+        gender === undefined &&
+        heightInCms === undefined &&
+        lastUpdatedWeightInKgs === undefined &&
+        updateRequired === undefined
+    ) {
+        throw new ApiError(400, "At least one field is required to update");
+    }
+
+    const updateData: Record<string, any> = {};
+    if (dateOfBirth !== undefined) updateData.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) updateData.gender = gender;
+    if (heightInCms !== undefined) updateData.heightInCms = heightInCms;
+    if (activityLevel !== undefined) updateData.activityLevel = activityLevel;
+    if (goal !== undefined) updateData.goal = goal;
+    if (lastUpdatedWeightInKgs !== undefined) updateData.lastUpdatedWeightInKgs = lastUpdatedWeightInKgs;
+    if (updateRequired !== undefined) updateData.updateRequired = updateRequired;
+
+    // Update user profile
+    const updatedUser = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, req.user.id))
+        .returning({
+            id: users.id,
+        });
+
+    if (!updatedUser[0]) {
+        throw new ApiError(500, "Failed to update user profile");
+    }
+
+    return res.status(200).json(new ApiResponse(200, {}, "Profile updated successfully"));
 })
 
 const getCurrentUser = asyncHandler(async (req, res) => {
@@ -345,4 +404,12 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 });
 
-export { initiateGoogleAuth, authenticateUserWithGoogle, completeProfile, getCurrentUser, logoutUser, refreshAccessToken };
+export {
+    initiateGoogleAuth,
+    authenticateUserWithGoogle,
+    completeProfile,
+    updateProfile,
+    getCurrentUser,
+    logoutUser,
+    refreshAccessToken
+};

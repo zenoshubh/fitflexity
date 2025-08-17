@@ -72,6 +72,24 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Add refetch method (do not set loading to true for refetch)
+  const refetch = async () => {
+    try {
+      const response = await api.get("/users/current-user");
+      if (response.data?.success && response.data?.data) {
+        setUser(response.data.data as User);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+    // Do not set loading state here
+  };
+
   useEffect(() => {
     // Fetch current user only if not on public routes
     fetchCurrentUser();
@@ -88,6 +106,7 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     login,
     logout,
+    refetch,
   };
 
   return loading ? (

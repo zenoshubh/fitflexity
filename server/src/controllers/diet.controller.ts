@@ -18,53 +18,31 @@ const generateDietPlan = asyncHandler(async (req, res) => {
         throw new ApiError(401, "User not authenticated");
     }
 
-    const userDetails: {
-        weightInKgs: string | null;
-        heightInCms: string | null;
-        dateOfBirth: string | null;
-        gender: "male" | "female" | "other" | null;
-        bodyFatPercentage: string | null;
-        activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "super_active" | null;
-    }[] =
-        await db.select({
-            weightInKgs: users.weightInKgs,
-            heightInCms: users.heightInCms,
-            dateOfBirth: users.dateOfBirth,
-            gender: users.gender,
-            bodyFatPercentage: users.bodyFatPercentage,
-            activityLevel: users.activityLevel
-        }).from(users)
-            .where(eq(users.id, user.id))
+    const { goal, currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender } = user;
 
-    if (userDetails.length === 0 || !userDetails[0]) {
-        throw new ApiError(404, "User details not found");
-    }
+    const { dietType, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = req.body;
 
-    const goal = user.goal || "maintain_weight";
-
-    const { dietType, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = req.body;
-
-    if (!dietType || desiredWeight === undefined || numberOfMeals === undefined || numberOfMealOptions === undefined) {
+    if (!dietType || numberOfMeals === undefined || numberOfMealOptions === undefined) {
         throw new ApiError(400, "All fields are required");
     }
 
     let planJson: any;
     try {
-        const dietPlan = await generateDietPlanWithLLM(
-            userDetails[0],
-            { dietType, goal, desiredWeight, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
+        const { generatedDietPlan, dailyCalorieIntake, dailyProteinIntake } = await generateDietPlanWithLLM(
+
+            { goal, currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
         );
 
-        if (!dietPlan) {
+        if (!generatedDietPlan) {
             throw new ApiError(500, "Failed to generate diet plan");
         }
 
         // Convert the AI response to string
-        const dietPlanText = typeof dietPlan === 'string'
-            ? dietPlan
-            : Array.isArray(dietPlan)
-                ? JSON.stringify(dietPlan)
-                : String(dietPlan);
+        const dietPlanText = typeof generatedDietPlan === 'string'
+            ? generatedDietPlan
+            : Array.isArray(generatedDietPlan)
+                ? JSON.stringify(generatedDietPlan)
+                : String(generatedDietPlan);
 
 
         // Try to extract JSON from the response (in case model adds extra text)
@@ -80,14 +58,17 @@ const generateDietPlan = asyncHandler(async (req, res) => {
 
         const newDiet: NewDiet = {
             userId: user.id,
-            name: `${goal.replace("_", " ")} Diet Plan`,
-            description: `Auto-generated diet plan for ${goal.replace("_", " ")}.`,
+            name: `${goal?.replace("_", " ")} Diet Plan`,
+            description: `Auto-generated diet plan for ${goal?.replace("_", " ")}.`,
             dietType,
             intolerancesAndAllergies: intolerancesAndAllergies || null,
             excludedFoods: excludedFoods || null,
             numberOfMeals,
+            optionsPerMeal: numberOfMealOptions,
             notes: notes || null,
             plan: planJson,
+            totalProtein: Math.round(dailyProteinIntake),
+            totalCalories: Math.round(dailyCalorieIntake),
         }
 
         // --- Save to DB ---
@@ -141,7 +122,47 @@ const fetchDietPlan = asyncHandler(async (req, res) => {
     );
 })
 
-const updateDietPlan = asyncHandler(async (req, res) => {
+const getDietPreferences = asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    if (!user) {
+        throw new ApiError(401, "User not authenticated");
+    }
+
+    const userId = user.id;
+
+    if (!userId) {
+        throw new ApiError(400, "User ID is required");
+    }
+
+    const dietPlan = await db.select({
+        dietType: diets.dietType,
+        numberOfMeals: diets.numberOfMeals,
+        optionsPerMeal: diets.optionsPerMeal,
+        intolerancesAndAllergies: diets.intolerancesAndAllergies,
+        excludedFoods: diets.excludedFoods,
+        notes: diets.notes,
+    }).from(diets).where(eq(diets.userId, userId));
+
+    if (dietPlan.length === 0 || !dietPlan[0]) {
+        return res.status(200).json(
+            new ApiResponse(200, { plan: null }, "No diet plan found for the user")
+        );
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            dietType: dietPlan[0].dietType,
+            numberOfMeals: dietPlan[0].numberOfMeals,
+            optionsPerMeal: dietPlan[0].optionsPerMeal,
+            intolerancesAndAllergies: dietPlan[0].intolerancesAndAllergies,
+            excludedFoods: dietPlan[0].excludedFoods,
+            notes: dietPlan[0].notes
+        }, "Diet preferences fetched successfully")
+    );
+})
+
+const editDietPlan = asyncHandler(async (req, res) => {
     const user = req.user;
     if (!user) {
         throw new ApiError(401, "User not authenticated");
@@ -352,4 +373,114 @@ const deleteDietPlan = asyncHandler(async (req, res) => {
     });
 })
 
-export { generateDietPlan, fetchDietPlan, updateDietPlan, chatDietPlan, deleteDietPlan };
+const updateDietPlan = asyncHandler(async (req, res) => {
+    const user = req.user;
+
+    if (!user) {
+        throw new ApiError(401, "User not authenticated");
+    }
+
+    if (user.updateRequired === false) {
+        throw new ApiError(400, "User update is not required");
+    }
+
+    await managePlanEmbeddingsQueue.add("delete-diet-plan", {
+        userId: user.id,
+        planType: "diet",
+    });
+
+    const { currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, goal, activityLevel, gender } = user;
+
+    const dietPreferences = await db.select({
+        dietType: diets.dietType,
+        numberOfMeals: diets.numberOfMeals,
+        numberOfMealOptions: diets.optionsPerMeal,
+        intolerancesAndAllergies: diets.intolerancesAndAllergies,
+        excludedFoods: diets.excludedFoods,
+        notes: diets.notes
+    }).from(diets).where(eq(diets.userId, user.id));
+
+
+    if (dietPreferences.length === 0 || !dietPreferences[0]) {
+        throw new ApiError(404, "Diet preferences not found");
+    }
+
+    const { dietType, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes } = dietPreferences[0];
+
+    let planJson: any;
+    try {
+        const { generatedDietPlan, dailyCalorieIntake, dailyProteinIntake } = await generateDietPlanWithLLM(
+            { currentWeightInKgs, targetWeightInKgs, heightInCms, dateOfBirth, activityLevel, gender, dietType, goal, numberOfMeals, numberOfMealOptions, intolerancesAndAllergies, excludedFoods, notes }
+        );
+
+        if (!generatedDietPlan) {
+            throw new ApiError(500, "Failed to generate diet plan");
+        }
+
+        // Convert the AI response to string
+        const dietPlanText = typeof generatedDietPlan === 'string'
+            ? generatedDietPlan
+            : Array.isArray(generatedDietPlan)
+                ? JSON.stringify(generatedDietPlan)
+                : String(generatedDietPlan);
+
+
+        // Try to extract JSON from the response (in case model adds extra text)
+        const jsonMatch = dietPlanText.match(/\[.*\]/s);
+        const jsonString = jsonMatch ? jsonMatch[0] : dietPlanText;
+
+        if (!jsonString) {
+            throw new ApiError(500, "Failed to parse diet plan response");
+        }
+
+        planJson = JSON.parse(jsonString);
+
+
+        const newDiet: Partial<NewDiet> = {
+            name: `${goal?.replace("_", " ")} Diet Plan`,
+            description: `Auto-generated diet plan for ${goal?.replace("_", " ")}.`,
+            plan: planJson,
+            totalProtein: dailyProteinIntake,
+            totalCalories: dailyCalorieIntake,
+            updatedAt: new Date(),
+        };
+
+        // --- Save to DB ---
+        const savedDiet = await db
+            .update(diets)
+            .set(newDiet)
+            .where(eq(diets.userId, user.id))
+            .returning();
+
+        if (!savedDiet || savedDiet.length === 0) {
+            throw new ApiError(500, "Failed to save diet plan");
+        }
+
+        // Respond to user immediately
+        res.status(200).json(
+            new ApiResponse(200, { plan: planJson }, "Diet plan updated and saved successfully")
+        );
+
+        await managePlanEmbeddingsQueue.add("embed-diet-plan", {
+            planJson,
+            userId: user.id,
+            goal: goal,
+            planType: "diet",
+        });
+
+        return;
+
+    } catch (error) {
+        throw new ApiError(500, "Failed to generate or parse diet plan");
+    }
+})
+
+export {
+    generateDietPlan,
+    fetchDietPlan,
+    getDietPreferences,
+    editDietPlan,
+    updateDietPlan,
+    chatDietPlan,
+    deleteDietPlan
+};

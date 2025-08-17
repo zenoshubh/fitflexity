@@ -20,7 +20,6 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { initialiseVectorStore } from "@/lib/vectorStore";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
-import { ChatOllama } from "@langchain/ollama";
 
 const memory = new MemorySaver();
 
@@ -30,18 +29,17 @@ const GraphAnnotation = Annotation.Root({
         reducer: (_, action) => action,
         default: () => "",
     }),
+    // User details ke liye naya field add kiya hai
+    userDetails: Annotation<string>({
+        reducer: (_, action) => action, // Isse yeh value state mein rahegi
+        default: () => "",
+    }),
 });
 
 const model = new ChatGoogleGenerativeAI({
-    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     apiKey: process.env.GOOGLE_GENAI_API_KEY,
 });
-
-// const model = new ChatOllama({
-//     model: "phi4-mini",
-//     baseUrl: process.env.OLLAMA_BASE_URL || "http://localhost:11434",
-//     temperature: 0,
-// });
 
 const dietPlanRetriever = tool(
     async ({ query }) => {
@@ -98,7 +96,7 @@ const toolNode = new ToolNode(tools);
 async function callModel(state: typeof GraphAnnotation.State): Promise<Partial<typeof GraphAnnotation.State>> {
     console.log("Calling 'conversation' node (callModel)");
 
-    const { summary } = state;
+    const { summary, userDetails } = state;
     let { messages } = state;
 
     // Get recent ToolMessages
@@ -116,23 +114,38 @@ async function callModel(state: typeof GraphAnnotation.State): Promise<Partial<t
     // Format tool messages content
     const docsContent = toolMessages.map((doc) => doc.content).join("\n");
 
-    // Prepare system instruction
-    const conciseInstruction = new SystemMessage({
-        id: uuidv4(),
-        content:
-            "Always respond in less than 50 words. You are a fitness coach who gives concise advice. Respond with plain text only - no JSON, Markdown, HTML, or backticks.",
-    });
+    const SYSTEM_PROMPT = `You are a highly experienced, evidence-based fitness coach. 
+Your goal is to deliver accurate, practical, and truly personalized advice based on the client's details below. 
+Always be encouraging, friendly, and supportive in your tone. 
+Focus on actionable recommendations that consider the client's goals, lifestyle, preferences, and health status. 
+Avoid exaggeration, unnecessary details, and jargon. 
+Keep responses concise, clear, and easy to understand. 
+If you need more information (such as personal details, goals, or limitations), politely ask the user to share it, and reassure them that it's okay if they haven't mentioned it yet. 
+You can answer any questions related to nutrition (including recipes, meal planning, and nutrition knowledge) or exercise (including form, workouts, training strategies, and recovery). 
+If the question is not related to workout or nutrition, gently let the user know and encourage them to ask relevant questions. 
+Make sure your response feels natural, empathetic, and human—never robotic. 
+Always respond with plain text only—no JSON, Markdown, HTML, or backticks. 
+Limit your answer to less than 150 words unless the user requests more detail. 
+Structure your advice in clear, numbered or bulleted points, stepwise, and always to the point. 
+If safety or health concerns arise, mention them briefly and encourage consulting a professional if needed.
+
+
+    Client details: ${userDetails}`;
+
 
     // Prepare system message with summary if available
     let systemMessage: SystemMessage;
     if (summary) {
         systemMessage = new SystemMessage({
             id: uuidv4(),
-            content: `Always respond in less than 50 words. You are a fitness coach who gives concise advice in easy English. Respond with plain text only - no JSON, Markdown, HTML, or backticks.
-            \nSummary of conversation earlier: ${summary}`,
+            content: `${SYSTEM_PROMPT} \n\nYou have a summary of the conversation so far. Use it to provide context for your response. \n\nSummary: ${summary}`,
         });
     } else {
-        systemMessage = conciseInstruction;
+        systemMessage = new SystemMessage({
+            id: uuidv4(),
+            content:
+                SYSTEM_PROMPT,
+        });
     }
 
     // Build final messages array
@@ -160,7 +173,7 @@ async function callModel(state: typeof GraphAnnotation.State): Promise<Partial<t
 
     // Invoke the model
     const response = await llmWithTools.invoke(finalMessages);
-    return { messages: [response] };
+    return { messages: [response], userDetails: userDetails };
 }
 
 function conversationCondition(state: typeof GraphAnnotation.State): "tools" | "summarize_conversation" | typeof END {

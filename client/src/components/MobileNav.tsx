@@ -17,7 +17,7 @@ import Loader from "./Loader";
 
 const NAV_LINKS = [
   {
-    href: "/",
+    href: "/user/dashboard",
     label: "Home",
     icon: Home,
   },
@@ -125,7 +125,7 @@ function MobileNav() {
                 {dropdownOpen && (
                   <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-40 animate-fade-in">
                     <Link
-                      href="/user/dashboard"
+                      href="/user/update-profile"
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-orange-50 transition text-left"
                       onClick={() => setDropdownOpen(false)}
                     >
